@@ -25,7 +25,7 @@ def test_vendor_file_cli_available_vendors(mocker, mock_yaml):
         cli=vendor_file_cli,
         args=["available-vendors"],
     )
-    assert "Available vendors: ['FOO', 'BAR', 'BAZ', 'NSDROP']" in result.output
+    assert result.stdout == "Available vendors: ['FOO', 'BAR', 'BAZ', 'NSDROP']\n"
 
 
 def test_vendor_file_cli_available_vendors_no_vendors(mocker):
@@ -36,7 +36,7 @@ def test_vendor_file_cli_available_vendors_no_vendors(mocker):
         cli=vendor_file_cli,
         args=["available-vendors"],
     )
-    assert "No vendors available." in result.output
+    assert "No vendors available." in result.stdout
 
 
 def test_vendor_file_cli_cli_daily_vendor_files(mock_Client, mocker, caplog, mock_yaml):
@@ -102,4 +102,4 @@ def test_vendor_file_cli_live_available_vendors():
         cli=vendor_file_cli,
         args=["available-vendors"],
     )
-    assert "Available vendors: " in result.output
+    assert "Available vendors: " in result.stdout
