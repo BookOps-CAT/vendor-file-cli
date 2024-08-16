@@ -25,6 +25,10 @@ def test_vendor_file_cli_available_vendors(mocker, mock_yaml):
         cli=vendor_file_cli,
         args=["available-vendors"],
     )
+    assert result.exit_code == 0
+    assert (
+        result.stdout_bytes == b"Available vendors: ['FOO', 'BAR', 'BAZ', 'NSDROP']\r\n"
+    )
     assert result.stdout == "Available vendors: ['FOO', 'BAR', 'BAZ', 'NSDROP']\n"
 
 
@@ -39,7 +43,7 @@ def test_vendor_file_cli_available_vendors_no_vendors(mocker):
     assert "No vendors available." in result.stdout
 
 
-def test_vendor_file_cli_cli_daily_vendor_files(mock_Client, mocker, caplog, mock_yaml):
+def test_vendor_file_cli_daily_vendor_files(mock_Client, mocker, caplog, mock_yaml):
     m = mocker.mock_open(read_data=mock_yaml)
     mocker.patch("builtins.open", m)
     runner = CliRunner()
@@ -59,7 +63,7 @@ def test_vendor_file_cli_cli_daily_vendor_files(mock_Client, mocker, caplog, moc
     assert "(BAZ) Closing client session" in caplog.text
 
 
-def test_vendor_file_cli_cli_get_files(mock_Client, mocker, caplog, mock_yaml):
+def test_vendor_file_cli_get_files(mock_Client, mocker, caplog, mock_yaml):
     m = mocker.mock_open(read_data=mock_yaml)
     mocker.patch("builtins.open", m)
     runner = CliRunner()
@@ -73,7 +77,7 @@ def test_vendor_file_cli_cli_get_files(mock_Client, mocker, caplog, mock_yaml):
     assert "(FOO) Closing client session" in caplog.text
 
 
-def test_vendor_file_cli_cli_get_files_multiple_vendors(
+def test_vendor_file_cli_get_files_multiple_vendors(
     mock_Client, mocker, caplog, mock_yaml
 ):
     m = mocker.mock_open(read_data=mock_yaml)
