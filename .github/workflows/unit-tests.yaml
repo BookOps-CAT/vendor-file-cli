@@ -18,14 +18,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version}}
-      - name: Install poetry
-        run: |
-          pipx install poetry
       - name: Install dependencies
         run: |
-          poetry install
+          python -m pip install --upgrade pip
+          python -m pip install -r dev-requirements.txt
+          python -m pip install -e .
       - name: Run tests
-        run: poetry run pytest --cov=vendor_file_cli/
+        run: pytest -m "not livetest" --cov=vendor_file_cli/
       - name: Send report to Coveralls
         uses: AndreMiras/coveralls-python-action@develop
         with:
