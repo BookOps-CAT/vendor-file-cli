@@ -23,7 +23,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r dev-requirements.txt
       - name: Run tests
-        run: pytest -m "not livetest" --cov=vendor_file_cli/
+        run: pytest -m "not livetest" --cov=vendor_file_cli/ | tee pytest_output.log
       - name: Send report to Coveralls
         uses: AndreMiras/coveralls-python-action@develop
         with:
