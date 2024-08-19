@@ -19,16 +19,14 @@ def test_vendor_file_cli(cli_runner):
 def test_vendor_file_cli_testing_all(cli_runner, caplog):
     result = cli_runner.invoke(
         cli=vendor_file_cli,
-        args=["fetch"],
+        args=["vendor-files"],
     )
     assert result.runner.get_default_prog_name(vendor_file_cli) == "vendor-file-cli"
     assert result.stdout_bytes == b""
     assert result.stderr_bytes is None
     assert result.return_value is None
-    # assert result.exit_code == 0
-    # assert result.exception
-    # assert result.exception == KeyError
-    assert result.exc_info is None
+    assert result.exit_code == 0
+    assert result.exception == KeyError
     assert result.output == ""
     assert result.stdout == ""
 

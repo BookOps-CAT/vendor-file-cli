@@ -1,8 +1,10 @@
 import io
 import logging
 import logging.config
+import os
 from typing import List
 import pytest
+import yaml
 from click.testing import CliRunner
 from file_retriever.connect import Client
 from file_retriever.file import File, FileInfo
@@ -11,24 +13,6 @@ from file_retriever.utils import logger_config
 logger = logging.getLogger("file_retriever")
 config = logger_config()
 logging.config.dictConfig(config)
-
-
-@pytest.fixture
-def mock_yaml() -> str:
-    vendor_list = []
-    vendors = ["FOO", "BAR", "BAZ", "NSDROP"]
-    for vendor in vendors:
-        string = (
-            f"{vendor}_HOST: ftp.{vendor.lower()}.com\n"
-            f"{vendor}_USER: {vendor.lower()}\n"
-            f"{vendor}_PASSWORD: bar\n"
-            f"{vendor}_PORT: '21'\n"
-            f"{vendor}_SRC: {vendor.lower()}_src\n"
-            f"{vendor}_DST: {vendor.lower()}_dst\n"
-        )
-        vendor_list.append(string)
-    yaml_string = "\n".join(vendor_list)
-    return yaml_string
 
 
 def mock_file_info() -> FileInfo:
@@ -79,8 +63,32 @@ def mock_Client(monkeypatch):
 
 
 @pytest.fixture
-def cli_runner(mocker, mock_Client, mock_yaml):
-    m = mocker.mock_open(read_data=mock_yaml)
-    mocker.patch("builtins.open", m)
+def cli_runner(mocker, mock_Client, mock_load_vendor_creds):
     runner = CliRunner()
     return runner
+
+
+@pytest.fixture
+def mock_load_vendor_creds(monkeypatch):
+    def mock_load_vendor_creds(*args, **kwargs):
+        vendor_list = []
+        vendors = ["FOO", "BAR", "BAZ", "NSDROP"]
+        for vendor in vendors:
+            string = (
+                f"{vendor}_HOST: ftp.{vendor.lower()}.com\n"
+                f"{vendor}_USER: {vendor.lower()}\n"
+                f"{vendor}_PASSWORD: bar\n"
+                f"{vendor}_PORT: '21'\n"
+                f"{vendor}_SRC: {vendor.lower()}_src\n"
+                f"{vendor}_DST: {vendor.lower()}_dst\n"
+            )
+            vendor_list.append(string)
+        yaml_string = "\n".join(vendor_list)
+        config = yaml.safe_load(yaml_string)
+        for k, v in config.items():
+            os.environ[k] = v
+        return vendors
+
+    monkeypatch.setattr(
+        "vendor_file_cli.commands.load_vendor_creds", mock_load_vendor_creds
+    )
