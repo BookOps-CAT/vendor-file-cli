@@ -19,7 +19,7 @@ def test_vendor_file_cli(cli_runner):
 def test_vendor_file_cli_testing_all(cli_runner, caplog):
     result = cli_runner.invoke(
         cli=vendor_file_cli,
-        args=["vendor-files"],
+        args=["fetch"],
     )
     assert result.runner.get_default_prog_name(vendor_file_cli) == "vendor-file-cli"
     assert result.stdout_bytes == b""
