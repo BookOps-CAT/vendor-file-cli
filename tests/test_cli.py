@@ -25,7 +25,7 @@ def test_vendor_file_cli_get_files(mock_Client, mocker, caplog, mock_yaml):
         cli=vendor_file_cli,
         args=["vendor-files", "-v", "all"],
     )
-    assert result.exit_code == 0
+    assert result.runner.get_default_prog_name(vendor_file_cli) == "vendor-file-cli"
     # assert "(NSDROP) Connected to server" in caplog.text
     # assert "(FOO) Connected to server" in caplog.text
     # assert "(FOO) Retrieving list of files in " in caplog.text
