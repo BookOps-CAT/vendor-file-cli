@@ -23,11 +23,17 @@ pytest-mock = "^3.14.0"
 [tool.poetry.scripts]
 fetch = "vendor_file_cli:main"
 
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
     "livetest: mark a test as using live credentials",
 ]
+
+
+[tool.coverage.run]
+relative_files = true
+source = ["."]
 
 
 [build-system]
