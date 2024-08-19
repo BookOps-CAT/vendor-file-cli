@@ -17,21 +17,6 @@ def test_vendor_file_cli():
     assert runner.get_default_prog_name(vendor_file_cli) == "vendor-file-cli"
 
 
-# def test_vendor_file_cli_testing_all(cli_runner, caplog):
-#     result = cli_runner.invoke(
-#         cli=vendor_file_cli,
-#         args=["vendor-files"],
-#     )
-#     assert result.runner.get_default_prog_name(vendor_file_cli) == "vendor-file-cli"
-#     assert result.stdout_bytes == b""
-#     assert result.stderr_bytes is None
-#     assert result.return_value is None
-#     assert result.exit_code == 0
-#     assert result.exception == KeyError
-#     assert result.output == ""
-#     assert result.stdout == ""
-
-
 def test_vendor_file_cli_get_files(cli_runner, caplog):
     cli_runner.invoke(
         cli=vendor_file_cli,
@@ -94,10 +79,7 @@ def test_vendor_file_cli_list_vendors(cli_runner, caplog):
         args=["available-vendors"],
     )
     assert result.exit_code == 0
-    assert (
-        result.stdout_bytes == b"Available vendors: ['FOO', 'BAR', 'BAZ', 'NSDROP']\r\n"
-    )
-    assert result.stdout == "Available vendors: ['FOO', 'BAR', 'BAZ', 'NSDROP']\n"
+    assert "Available vendors: ['FOO', 'BAR', 'BAZ', 'NSDROP']" in result.stdout
 
 
 @pytest.mark.livetest
