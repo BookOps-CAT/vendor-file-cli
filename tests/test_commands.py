@@ -65,7 +65,7 @@ def test_get_recent_files(mock_Client, caplog):
     ) = ("sftp.foo.com", "foo", "bar", "22", "foo_src")
     vendors = ["foo"]
     get_recent_files(vendors=vendors, days=300)
-    assert "(NSDROP) Connecting to sftp.foo.com" in caplog.text
+    assert "(NSDROP) Connected to server" in caplog.text
     assert "(FOO) Connected to server" in caplog.text
     assert "(FOO) Retrieving list of files in " in caplog.text
     assert "(FOO) Closing client session" in caplog.text
@@ -81,7 +81,7 @@ def test_get_recent_files_no_files(mock_Client, caplog):
     ) = ("sftp.foo.com", "foo", "bar", "22", "foo_src")
     vendors = ["foo"]
     get_recent_files(vendors=vendors, days=1, hours=1, minutes=1)
-    assert "(NSDROP) Connecting to sftp.foo.com" in caplog.text
+    assert "(NSDROP) Connected to server" in caplog.text
     assert "(FOO) Connected to server" in caplog.text
     assert "(FOO) Retrieving list of files in " in caplog.text
     assert "(FOO) Closing client session" in caplog.text

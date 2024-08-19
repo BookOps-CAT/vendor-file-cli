@@ -51,7 +51,7 @@ def test_vendor_file_cli_daily_vendor_files(mock_Client, mocker, caplog, mock_ya
         cli=vendor_file_cli,
         args=["daily-vendor-files"],
     )
-    assert "(NSDROP) Connecting to ftp.nsdrop.com" in caplog.text
+    assert "(NSDROP) Connected to server" in caplog.text
     assert "(FOO) Connected to server" in caplog.text
     assert "(FOO) Retrieving list of files in " in caplog.text
     assert "(FOO) Closing client session" in caplog.text
@@ -71,7 +71,7 @@ def test_vendor_file_cli_get_files(mock_Client, mocker, caplog, mock_yaml):
         cli=vendor_file_cli,
         args=["vendor-files", "-v", "all"],
     )
-    assert "(NSDROP) Connecting to ftp.nsdrop.com" in caplog.text
+    assert "(NSDROP) Connected to server" in caplog.text
     assert "(FOO) Connected to server" in caplog.text
     assert "(FOO) Retrieving list of files in " in caplog.text
     assert "(FOO) Closing client session" in caplog.text
@@ -87,7 +87,7 @@ def test_vendor_file_cli_get_files_multiple_vendors(
         cli=vendor_file_cli,
         args=["vendor-files", "-v", "foo", "-v", "bar", "-v", "baz"],
     )
-    assert "(NSDROP) Connecting to ftp.nsdrop.com" in caplog.text
+    assert "(NSDROP) Connected to server" in caplog.text
     assert "(FOO) Connected to server" in caplog.text
     assert "(FOO) Retrieving list of files in " in caplog.text
     assert "(FOO) Closing client session" in caplog.text
