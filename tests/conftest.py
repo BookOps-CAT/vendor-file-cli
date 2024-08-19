@@ -89,6 +89,10 @@ def mock_load_vendor_creds(monkeypatch):
             os.environ[k] = v
         return vendors
 
+    def mock_os_environ(*args, **kwargs):
+        return "foo"
+
     monkeypatch.setattr(
         "vendor_file_cli.commands.load_vendor_creds", mock_load_vendor_creds
     )
+    monkeypatch.setattr("os.environ", mock_os_environ)
