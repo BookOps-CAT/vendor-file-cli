@@ -26,8 +26,9 @@ def test_vendor_file_cli_testing_all(cli_runner, caplog):
     assert result.stderr_bytes is None
     assert result.return_value is None
     # assert result.exit_code == 0
-    assert result.exception == KeyError
-    assert result.exc_info is not None
+    # assert result.exception
+    # assert result.exception == KeyError
+    assert result.exc_info is None
     assert result.output == ""
     assert result.stdout == ""
 
