@@ -3,16 +3,9 @@ credentials."""
 
 import datetime
 import os
-import logging
-import logging.config
 from typing import List
 import yaml
 from file_retriever.connect import Client
-from file_retriever.utils import logger_config
-
-logger = logging.getLogger("file_retriever")
-config = logger_config()
-logging.config.dictConfig(config)
 
 
 def connect(name: str) -> Client:
@@ -78,6 +71,7 @@ def get_recent_files(
                     remote=True,
                     check=True,
                 )
+    nsdrop_client.close()
 
 
 def load_vendor_creds(config_path: str) -> List[str]:

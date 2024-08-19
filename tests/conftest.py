@@ -1,8 +1,16 @@
 import io
+import logging
+import logging.config
 from typing import List
 import pytest
+from click.testing import CliRunner
 from file_retriever.connect import Client
 from file_retriever.file import File, FileInfo
+from file_retriever.utils import logger_config
+
+logger = logging.getLogger("file_retriever")
+config = logger_config()
+logging.config.dictConfig(config)
 
 
 @pytest.fixture
@@ -68,3 +76,11 @@ def mock_Client(monkeypatch):
 
     monkeypatch.setattr(Client, "file_exists", mock_file_exists)
     monkeypatch.setattr(Client, "_Client__connect_to_server", mock_session)
+
+
+@pytest.fixture
+def cli_runner(mocker, mock_Client, mock_yaml):
+    m = mocker.mock_open(read_data=mock_yaml)
+    mocker.patch("builtins.open", m)
+    runner = CliRunner()
+    return runner
