@@ -79,7 +79,7 @@ def test_vendor_file_cli_list_vendors(cli_runner, caplog):
         args=["available-vendors"],
     )
     assert result.exit_code == 0
-    assert "Available vendors: ['FOO', 'BAR', 'BAZ', 'NSDROP']" in result.stdout
+    assert "Available vendors: ['FOO', 'BAR', 'BAZ']" in result.stdout
 
 
 @pytest.mark.livetest

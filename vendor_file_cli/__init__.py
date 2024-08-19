@@ -96,7 +96,6 @@ def get_files_today() -> None:
     vendor_list = load_vendor_creds(
         os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
     )
-    click.echo(f"Available vendors: {vendor_list}")
     get_recent_files(vendors=vendor_list, days=1)
 
 
