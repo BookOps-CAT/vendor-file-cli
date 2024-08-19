@@ -11,9 +11,10 @@ def test_main(mocker):
     assert exc.value.code == 2
 
 
-def test_vendor_file_cli(cli_runner):
-    cli_runner.invoke(vendor_file_cli)
-    assert cli_runner.get_default_prog_name(vendor_file_cli) == "vendor-file-cli"
+def test_vendor_file_cli():
+    runner = CliRunner()
+    runner.invoke(vendor_file_cli)
+    assert runner.get_default_prog_name(vendor_file_cli) == "vendor-file-cli"
 
 
 def test_vendor_file_cli_testing_all(cli_runner, caplog):

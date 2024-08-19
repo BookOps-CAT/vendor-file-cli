@@ -1,10 +1,8 @@
 import io
 import logging
 import logging.config
-import os
 from typing import List
 import pytest
-import yaml
 from click.testing import CliRunner
 from file_retriever.connect import Client
 from file_retriever.file import File, FileInfo
@@ -69,30 +67,34 @@ def cli_runner(mocker, mock_Client, mock_load_vendor_creds):
 
 
 @pytest.fixture
-def mock_load_vendor_creds(monkeypatch):
-    def mock_load_vendor_creds(*args, **kwargs):
-        vendor_list = []
-        vendors = ["FOO", "BAR", "BAZ", "NSDROP"]
-        for vendor in vendors:
-            string = (
-                f"{vendor}_HOST: ftp.{vendor.lower()}.com\n"
-                f"{vendor}_USER: {vendor.lower()}\n"
-                f"{vendor}_PASSWORD: bar\n"
-                f"{vendor}_PORT: '21'\n"
-                f"{vendor}_SRC: {vendor.lower()}_src\n"
-                f"{vendor}_DST: {vendor.lower()}_dst\n"
-            )
-            vendor_list.append(string)
-        yaml_string = "\n".join(vendor_list)
-        config = yaml.safe_load(yaml_string)
-        for k, v in config.items():
-            os.environ[k] = v
-        return vendors
+def mock_open_yaml_file(mocker):
+    vendor_list = []
+    vendors = ["FOO", "BAR", "BAZ", "NSDROP"]
+    for vendor in vendors:
+        string = (
+            f"{vendor}_HOST: ftp.{vendor.lower()}.com\n"
+            f"{vendor}_USER: {vendor.lower()}\n"
+            f"{vendor}_PASSWORD: bar\n"
+            f"{vendor}_PORT: '21'\n"
+            f"{vendor}_SRC: {vendor.lower()}_src\n"
+            f"{vendor}_DST: {vendor.lower()}_dst\n"
+        )
+        vendor_list.append(string)
+    yaml_string = "\n".join(vendor_list)
+    m = mocker.mock_open(read_data=yaml_string)
+    mocker.patch("builtins.open", m)
 
-    def mock_os_environ(*args, **kwargs):
-        return "foo"
+
+@pytest.fixture
+def mock_load_vendor_creds(monkeypatch, mock_open_yaml_file):
+    def mock_path(*args, **kwargs):
+        return "testdir"
+
+    def mock_load_vendor_creds(*args, **kwargs):
+        return ["FOO", "BAR", "BAZ", "NSDROP"]
 
     monkeypatch.setattr(
         "vendor_file_cli.commands.load_vendor_creds", mock_load_vendor_creds
     )
-    monkeypatch.setattr("os.environ", mock_os_environ)
+    monkeypatch.setenv("USERPROFILE", "test")
+    monkeypatch.setattr("os.path.join", mock_path)
