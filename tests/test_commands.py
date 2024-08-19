@@ -124,8 +124,9 @@ def test_load_vendor_creds_empty_yaml(mocker):
     m = mocker.mock_open(read_data=yaml_string)
     mocker.patch("builtins.open", m)
 
-    client_list = load_vendor_creds("foo.yaml")
-    assert client_list is None
+    with pytest.raises(ValueError) as exc:
+        load_vendor_creds("foo.yaml")
+    assert "No credentials found in config file" in str(exc.value)
 
 
 @pytest.mark.livetest

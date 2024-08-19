@@ -5,7 +5,7 @@ import datetime
 import os
 import logging
 import logging.config
-from typing import List, Optional
+from typing import List
 import yaml
 from file_retriever.connect import Client
 from file_retriever.utils import logger_config
@@ -80,7 +80,7 @@ def get_recent_files(
                 )
 
 
-def load_vendor_creds(config_path: str) -> Optional[List[str]]:
+def load_vendor_creds(config_path: str) -> List[str]:
     """
     Read config file with credentials and set creds as environment variables.
     Returns a list of vendors whose FTP/SFTP credentials are stored in the
@@ -96,7 +96,7 @@ def load_vendor_creds(config_path: str) -> Optional[List[str]]:
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
         if config is None:
-            return None
+            raise ValueError("No credentials found in config file.")
         for k, v in config.items():
             os.environ[k] = v
         vendor_list = [

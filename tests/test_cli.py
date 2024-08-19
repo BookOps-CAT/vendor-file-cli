@@ -88,17 +88,6 @@ def test_vendor_file_cli_list_vendors(mocker, mock_yaml):
     assert result.stdout == "Available vendors: ['FOO', 'BAR', 'BAZ', 'NSDROP']\n"
 
 
-def test_vendor_file_cli_list_vendors_none(mocker):
-    m = mocker.mock_open(read_data="")
-    mocker.patch("builtins.open", m)
-    runner = CliRunner()
-    result = runner.invoke(
-        cli=vendor_file_cli,
-        args=["available-vendors"],
-    )
-    assert "No vendors available." in result.stdout
-
-
 @pytest.mark.livetest
 def test_vendor_file_cli_live_available_vendors():
     runner = CliRunner()

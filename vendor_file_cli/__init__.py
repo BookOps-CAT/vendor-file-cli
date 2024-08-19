@@ -12,8 +12,7 @@ logging.config.dictConfig(config)
 
 
 @click.group
-@click.pass_context
-def vendor_file_cli(ctx: click.Context) -> None:
+def vendor_file_cli() -> None:
     """
     CLI for interacting with remote servers.
 
@@ -24,11 +23,6 @@ def vendor_file_cli(ctx: click.Context) -> None:
     to env vars. This list of names is stored in a `click.Context.obj` that can
     be passed to any other commands.
     """
-    config = logger_config()
-    logging.config.dictConfig(config)
-    ctx.obj = load_vendor_creds(
-        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
-    )
     pass
 
 
@@ -67,10 +61,7 @@ def vendor_file_cli(ctx: click.Context) -> None:
     type=int,
     help="How many minutes back to retrieve files.",
 )
-@click.pass_context
-def get_files(
-    ctx: click.Context, vendor: str, days: int, hours: int, minutes: int
-) -> None:
+def get_files(vendor: str, days: int, hours: int, minutes: int) -> None:
     """
     Retrieve files from remote server for specified vendor(s).
 
@@ -88,8 +79,11 @@ def get_files(
             number of minutes to go back and retrieve files from
 
     """
-    if "all" in vendor and isinstance(ctx.obj, list):
-        vendor_list = [i.upper() for i in ctx.obj if i != "NSDROP"]
+    all_available_vendors = load_vendor_creds(
+        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
+    )
+    if "all" in vendor:
+        vendor_list = all_available_vendors
     else:
         vendor_list = [i.upper() for i in vendor]
     get_recent_files(vendors=vendor_list, days=days, hours=hours, minutes=minutes)
@@ -98,8 +92,7 @@ def get_files(
 @vendor_file_cli.command(
     "daily-vendor-files", short_help="Retrieve previous day's files from remote server."
 )
-@click.pass_context
-def get_files_today(ctx: click.Context) -> None:
+def get_files_today() -> None:
     """
     Retrieve files updated within last day from remote server for all vendor(s).
 
@@ -107,14 +100,15 @@ def get_files_today(ctx: click.Context) -> None:
         ctx: click context object that contains a list of vendor names
 
     """
-    vendor_list = [i.upper() for i in ctx.obj]
-    click.echo(vendor_list)
+    vendor_list = load_vendor_creds(
+        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
+    )
+    click.echo(f"Available vendors: {vendor_list}")
     get_recent_files(vendors=vendor_list, days=1)
 
 
 @vendor_file_cli.command("available-vendors", short_help="List all configured vendors.")
-@click.pass_context
-def list_vendors(ctx: click.Context) -> None:
+def list_vendors() -> None:
     """
     List all configured vendors.
 
@@ -122,10 +116,10 @@ def list_vendors(ctx: click.Context) -> None:
         ctx: click context object that contains a list of vendor names
 
     """
-    if isinstance(ctx.obj, list) and len(ctx.obj) > 0:
-        click.echo(f"Available vendors: {ctx.obj}")
-    else:
-        click.echo("No vendors available.")
+    vendor_list = load_vendor_creds(
+        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
+    )
+    click.echo(f"Available vendors: {vendor_list}")
 
 
 def main():
