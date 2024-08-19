@@ -4,34 +4,8 @@ import logging.config
 import os
 import pytest
 from file_retriever.connect import Client
-from vendor_file_cli.commands import load_vendor_creds, connect, get_recent_files
+from vendor_file_cli.commands import connect, get_recent_files, load_vendor_creds
 from file_retriever.utils import logger_config
-
-
-def test_client_config(mocker):
-    yaml_string = """
-        FOO_HOST: foo
-        FOO_USER: bar
-        FOO_PASSWORD: baz
-        FOO_PORT: '21'
-        FOO_SRC: foo_src
-        BAR_HOST: foo
-        BAR_USER: bar
-        BAR_PASSWORD: baz
-        BAR_PORT: '22'
-        BAR_SRC: bar_src
-    """
-    m = mocker.mock_open(read_data=yaml_string)
-    mocker.patch("builtins.open", m)
-
-    client_list = load_vendor_creds("foo.yaml")
-    assert len(client_list) == 2
-    assert client_list == ["FOO", "BAR"]
-    assert os.environ["FOO_HOST"] == "foo"
-    assert os.environ["FOO_USER"] == "bar"
-    assert os.environ["FOO_PASSWORD"] == "baz"
-    assert os.environ["FOO_PORT"] == "21"
-    assert os.environ["FOO_SRC"] == "foo_src"
 
 
 def test_connect(mock_Client, mocker):
@@ -117,6 +91,41 @@ def test_logger_config_stream(message, level, caplog):
     assert message in log_messages
     assert level in log_level
     assert today in log_created
+
+
+def test_load_vendor_creds(mocker):
+    yaml_string = """
+        FOO_HOST: foo
+        FOO_USER: bar
+        FOO_PASSWORD: baz
+        FOO_PORT: '21'
+        FOO_SRC: foo_src
+        BAR_HOST: foo
+        BAR_USER: bar
+        BAR_PASSWORD: baz
+        BAR_PORT: '22'
+        BAR_SRC: bar_src
+    """
+    m = mocker.mock_open(read_data=yaml_string)
+    mocker.patch("builtins.open", m)
+
+    client_list = load_vendor_creds("foo.yaml")
+    assert len(client_list) == 2
+    assert client_list == ["FOO", "BAR"]
+    assert os.environ["FOO_HOST"] == "foo"
+    assert os.environ["FOO_USER"] == "bar"
+    assert os.environ["FOO_PASSWORD"] == "baz"
+    assert os.environ["FOO_PORT"] == "21"
+    assert os.environ["FOO_SRC"] == "foo_src"
+
+
+def test_load_vendor_creds_empty_yaml(mocker):
+    yaml_string = ""
+    m = mocker.mock_open(read_data=yaml_string)
+    mocker.patch("builtins.open", m)
+
+    client_list = load_vendor_creds("foo.yaml")
+    assert client_list is None
 
 
 @pytest.mark.livetest
