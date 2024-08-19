@@ -14,14 +14,7 @@ logging.config.dictConfig(config)
 @click.group
 def vendor_file_cli() -> None:
     """
-    CLI for interacting with remote servers.
-
-    Loggers are configured when the command group is called. The `client_config`
-    function is used to read a configuration file with credentials and set the
-    creds as environment variables. `client_config` returns a list of names for
-    servers whose credentials are stored in the configuration file and loaded
-    to env vars. This list of names is stored in a `click.Context.obj` that can
-    be passed to any other commands.
+    CLI for retrieving files from vendor FTP/SFTP servers.
     """
     pass
 
