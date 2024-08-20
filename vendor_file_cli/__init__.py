@@ -3,7 +3,10 @@ import logging.config
 import os
 import click
 from file_retriever.utils import logger_config
-from vendor_file_cli.commands import load_vendor_creds, get_recent_files
+from vendor_file_cli.commands import (
+    load_vendor_creds,
+    get_vendor_files,
+)
 
 
 logger = logging.getLogger("file_retriever")
@@ -20,7 +23,8 @@ def vendor_file_cli() -> None:
 
 
 @vendor_file_cli.command(
-    "vendor-files", short_help="Retrieve files from remote server."
+    "recent-vendor-files",
+    short_help="Retrieve files from remote server based on timedelta.",
 )
 @click.option(
     "--vendor",
@@ -79,11 +83,12 @@ def get_files(vendor: str, days: int, hours: int, minutes: int) -> None:
         vendor_list = all_available_vendors
     else:
         vendor_list = [i.upper() for i in vendor]
-    get_recent_files(vendors=vendor_list, days=days, hours=hours, minutes=minutes)
+    get_vendor_files(vendors=vendor_list, days=days, hours=hours, minutes=minutes)
 
 
 @vendor_file_cli.command(
-    "daily-vendor-files", short_help="Retrieve previous day's files from remote server."
+    "daily-vendor-files",
+    short_help="Retrieve files created in last day for all vendors",
 )
 def get_files_today() -> None:
     """
@@ -96,7 +101,25 @@ def get_files_today() -> None:
     vendor_list = load_vendor_creds(
         os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
     )
-    get_recent_files(vendors=vendor_list, days=1)
+    get_vendor_files(vendors=vendor_list, days=1)
+
+
+@vendor_file_cli.command(
+    "all-vendor-files",
+    short_help="Retrieve all vendor files that are not in NSDROP.",
+)
+def get_all_vendor_files() -> None:
+    """
+    Retrieve all files from vendor server that are not in vendor's NSDROP directory.
+
+    Args:
+        None
+
+    """
+    vendor_list = load_vendor_creds(
+        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
+    )
+    get_vendor_files(vendors=vendor_list)
 
 
 @vendor_file_cli.command("available-vendors", short_help="List all configured vendors.")

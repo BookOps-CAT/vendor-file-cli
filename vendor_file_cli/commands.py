@@ -1,11 +1,14 @@
 """This module contains functions to be used to configure the CLI and load
 credentials."""
 
+import logging
 import datetime
 import os
 from typing import List
 import yaml
 from file_retriever.connect import Client
+
+logger = logging.getLogger("file_retriever")
 
 
 def connect(name: str) -> Client:
@@ -29,14 +32,16 @@ def connect(name: str) -> Client:
     )
 
 
-def get_recent_files(
+def get_vendor_files(
     vendors: List[str], days: int = 0, hours: int = 0, minutes: int = 0
 ) -> None:
     """
-    Retrieve files from remote server for vendors in `vendor_list`.
-    Creates timedelta object from `days`, `hours`, and `minutes` and retrieves
-    files created in the last x days where x is today - timedelta. If days, hours,
-    or minutes are not provided, all files will be retrieved from the remote server.
+    Retrieve files from remote server for vendors in `vendor_list`. Forms timedelta
+    object from `days`, `hours`, and `minutes` and creates list of files created within
+    that time delta. If days, hours, and minutes args are not provided, all files that
+    are in the vendor's remote directory will be included in the list. Compares that
+    list of files to the list of files in the vendor's NSDROP directory only copies
+    the files that are not already present in the NSDROP directory.
 
     Args:
         vendors: list of vendor names
@@ -50,24 +55,29 @@ def get_recent_files(
     """
     nsdrop_client = connect("nsdrop")
     timedelta = datetime.timedelta(days=days, hours=hours, minutes=minutes)
+
     for vendor in vendors:
+        vendor_src_dir = os.environ[f"{vendor.upper()}_SRC"]
+        vendor_dst_dir = os.environ[f"{vendor.upper()}_DST"]
         with connect(vendor) as client:
-            file_list = [
-                i
-                for i in client.list_file_info(
-                    time_delta=timedelta,
-                    remote_dir=os.environ[f"{vendor.upper()}_SRC"],
+            file_list = client.list_file_info(
+                time_delta=timedelta,
+                remote_dir=vendor_src_dir,
+            )
+            files_to_add = nsdrop_client.check_file_list(
+                files=file_list, dir=vendor_dst_dir, remote=True
+            )
+            if len(files_to_add) == 0:
+                logger.debug(
+                    f"({vendor.upper()}) NSDROP directory is already up to date"
                 )
-            ]
-            if len(file_list) == 0:
                 continue
-            for file in file_list:
-                fetched_file = client.get_file(
-                    file=file, remote_dir=os.environ[f"{vendor.upper()}_SRC"]
-                )
+            logger.debug(f"Writing {len(files_to_add)} files to NSDROP directory")
+            for file in files_to_add:
+                fetched_file = client.get_file(file=file, remote_dir=vendor_src_dir)
                 nsdrop_client.put_file(
                     file=fetched_file,
-                    dir=os.environ[f"{vendor.upper()}_DST"],
+                    dir=vendor_dst_dir,
                     remote=True,
                     check=True,
                 )
