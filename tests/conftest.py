@@ -50,13 +50,13 @@ class MockClient:
 
 @pytest.fixture
 def mock_Client(monkeypatch):
-    def mock_file_exists(*args, **kwargs):
+    def mock_check_file(*args, **kwargs):
         return False
 
     def mock_session(*args, **kwargs):
         return MockClient()
 
-    monkeypatch.setattr(Client, "file_exists", mock_file_exists)
+    monkeypatch.setattr(Client, "check_file", mock_check_file)
     monkeypatch.setattr(Client, "_Client__connect_to_server", mock_session)
 
 

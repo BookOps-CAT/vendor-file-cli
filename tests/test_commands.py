@@ -4,7 +4,7 @@ import logging.config
 import os
 import pytest
 from file_retriever.connect import Client
-from vendor_file_cli.commands import connect, get_recent_files, load_vendor_creds
+from vendor_file_cli.commands import connect, get_vendor_files, load_vendor_creds
 from file_retriever.utils import logger_config
 
 
@@ -29,7 +29,7 @@ def test_connect(mock_Client, mocker):
     assert client.session is not None
 
 
-def test_get_recent_files(mock_Client, caplog):
+def test_get_vendor_files(mock_Client, caplog):
     (
         os.environ["NSDROP_HOST"],
         os.environ["NSDROP_USER"],
@@ -38,14 +38,14 @@ def test_get_recent_files(mock_Client, caplog):
         os.environ["NSDROP_SRC"],
     ) = ("sftp.foo.com", "foo", "bar", "22", "foo_src")
     vendors = ["foo"]
-    get_recent_files(vendors=vendors, days=300)
+    get_vendor_files(vendors=vendors, days=300)
     assert "(NSDROP) Connected to server" in caplog.text
     assert "(FOO) Connected to server" in caplog.text
     assert "(FOO) Retrieving list of files in " in caplog.text
     assert "(FOO) Closing client session" in caplog.text
 
 
-def test_get_recent_files_no_files(mock_Client, caplog):
+def test_get_vendor_files_no_files(mock_Client, caplog):
     (
         os.environ["NSDROP_HOST"],
         os.environ["NSDROP_USER"],
@@ -54,7 +54,7 @@ def test_get_recent_files_no_files(mock_Client, caplog):
         os.environ["NSDROP_SRC"],
     ) = ("sftp.foo.com", "foo", "bar", "22", "foo_src")
     vendors = ["foo"]
-    get_recent_files(vendors=vendors, days=1, hours=1, minutes=1)
+    get_vendor_files(vendors=vendors, days=1, hours=1, minutes=1)
     assert "(NSDROP) Connected to server" in caplog.text
     assert "(FOO) Connected to server" in caplog.text
     assert "(FOO) Retrieving list of files in " in caplog.text
