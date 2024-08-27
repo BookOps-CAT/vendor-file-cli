@@ -313,7 +313,7 @@ types-pyyaml = "^6.0.12.20240311"
 type = "git"
 url = "https://github.com/BookOps-CAT/file-retriever.git"
 reference = "HEAD"
-resolved_reference = "632723362e225c641298affd143804d8e94f8f0c"
+resolved_reference = "8433d49ae3150901c97f8068c03f071b2b66d46a"
 
 [[package]]
 name = "iniconfig"
