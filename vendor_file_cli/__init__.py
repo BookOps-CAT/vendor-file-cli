@@ -2,23 +2,15 @@ import logging
 import logging.config
 import os
 import click
-from file_retriever.utils import logger_config
-from vendor_file_cli.commands import (
-    load_vendor_creds,
-    get_vendor_files,
-)
 
-
-logger = logging.getLogger("file_retriever")
-config = logger_config()
-logging.config.dictConfig(config)
+from vendor_file_cli.commands import load_vendor_creds, get_vendor_files, logger_config
 
 
 @click.group
 def vendor_file_cli() -> None:
-    """
-    CLI for retrieving files from vendor FTP/SFTP servers.
-    """
+    """CLI for retrieving files from vendor FTP/SFTP servers."""
+    logger = logging.getLogger("vendor_file_cli")
+    logger_config(logger)
     pass
 
 
@@ -27,13 +19,7 @@ def vendor_file_cli() -> None:
     short_help="Retrieve all vendor files that are not in NSDROP.",
 )
 def get_all_vendor_files() -> None:
-    """
-    Retrieve all files from vendor server that are not in vendor's NSDROP directory.
-
-    Args:
-        None
-
-    """
+    """Retrieve files from vendor server not present in vendor's NSDROP directory."""
     vendor_list = load_vendor_creds(
         os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
     )
@@ -42,13 +28,7 @@ def get_all_vendor_files() -> None:
 
 @vendor_file_cli.command("available-vendors", short_help="List all configured vendors.")
 def get_available_vendors() -> None:
-    """
-    List all configured vendors.
-
-    Args:
-        ctx: click context object that contains a list of vendor names
-
-    """
+    """List all configured vendors."""
     vendor_list = load_vendor_creds(
         os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
     )
@@ -60,13 +40,7 @@ def get_available_vendors() -> None:
     short_help="Retrieve files created in last day for all vendors",
 )
 def get_daily_vendor_files() -> None:
-    """
-    Retrieve files updated within last day from remote server for all vendor(s).
-
-    Args:
-        ctx: click context object that contains a list of vendor names
-
-    """
+    """Retrieve files updated within last day from remote server for all vendor(s)."""
     vendor_list = load_vendor_creds(
         os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
     )
