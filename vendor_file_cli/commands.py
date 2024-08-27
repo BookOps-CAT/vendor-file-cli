@@ -1,14 +1,13 @@
-"""This module contains functions to be used to configure the CLI and load
-credentials."""
+"""This module contains functions to use to configure the CLI, logger, and env vars."""
 
 import logging
+import logging.handlers
 import datetime
 import os
-from typing import List
 import yaml
 from file_retriever.connect import Client
 
-logger = logging.getLogger("file_retriever")
+logger = logging.getLogger("vendor_file_cli")
 
 
 def connect(name: str) -> Client:
@@ -33,7 +32,7 @@ def connect(name: str) -> Client:
 
 
 def get_vendor_files(
-    vendors: List[str], days: int = 0, hours: int = 0, minutes: int = 0
+    vendors: list[str], days: int = 0, hours: int = 0, minutes: int = 0
 ) -> None:
     """
     Retrieve files from remote server for vendors in `vendor_list`. Forms timedelta
@@ -84,7 +83,7 @@ def get_vendor_files(
     nsdrop_client.close()
 
 
-def load_vendor_creds(config_path: str) -> List[str]:
+def load_vendor_creds(config_path: str) -> list[str]:
     """
     Read config file with credentials and set creds as environment variables.
     Returns a list of vendors whose FTP/SFTP credentials are stored in the
@@ -111,3 +110,31 @@ def load_vendor_creds(config_path: str) -> List[str]:
         for vendor in vendor_list:
             os.environ[f"{vendor}_DST"] = f"NSDROP/vendor_records/{vendor.lower()}"
         return vendor_list
+
+
+def logger_config(app_logger: logging.Logger) -> None:
+    """
+    Create and return dict for logger configuration.
+    """
+    root_logger = logging.getLogger("file_retriever")
+    root_logger.setLevel(logging.DEBUG)
+    app_logger.setLevel(logging.DEBUG)
+
+    stream_handler = logging.StreamHandler()
+    file_handler = logging.handlers.RotatingFileHandler(
+        filename="vendor_file_cli.log",
+        maxBytes=10 * 1024 * 1024,
+        backupCount=5,
+        encoding="utf8",
+    )
+    formatter = logging.Formatter(fmt="%(asctime)s - %(levelname)s - %(message)s")
+
+    stream_handler.setLevel(logging.DEBUG)
+    stream_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+
+    app_logger.addHandler(stream_handler)
+    app_logger.addHandler(file_handler)
+    root_logger.addHandler(stream_handler)
+    root_logger.addHandler(file_handler)

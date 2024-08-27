@@ -1,16 +1,8 @@
 import io
-import logging
-import logging.config
-from typing import List
 import pytest
 from click.testing import CliRunner
 from file_retriever.connect import Client
 from file_retriever.file import File, FileInfo
-from file_retriever.utils import logger_config
-
-logger = logging.getLogger("file_retriever")
-config = logger_config()
-logging.config.dictConfig(config)
 
 
 def mock_file_info() -> FileInfo:
@@ -41,7 +33,7 @@ class MockClient:
     def is_active(self) -> bool:
         return True
 
-    def list_file_data(self, *args, **kwargs) -> List[FileInfo]:
+    def list_file_data(self, *args, **kwargs) -> list[FileInfo]:
         return [mock_file_info()]
 
     def write_file(self, *args, **kwargs) -> FileInfo:
@@ -58,12 +50,6 @@ def mock_Client(monkeypatch):
 
     monkeypatch.setattr(Client, "check_file", mock_check_file)
     monkeypatch.setattr(Client, "_Client__connect_to_server", mock_session)
-
-
-@pytest.fixture
-def cli_runner(mocker, mock_Client, mock_load_vendor_creds):
-    runner = CliRunner()
-    return runner
 
 
 @pytest.fixture
@@ -98,3 +84,9 @@ def mock_load_vendor_creds(monkeypatch, mock_open_yaml_file):
     )
     monkeypatch.setenv("USERPROFILE", "test")
     monkeypatch.setattr("os.path.join", mock_path)
+
+
+@pytest.fixture
+def cli_runner(mocker, mock_Client, mock_load_vendor_creds):
+    runner = CliRunner()
+    return runner
