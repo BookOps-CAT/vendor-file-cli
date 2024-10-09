@@ -1,6 +1,7 @@
 import logging
 import logging.handlers
 import os
+import json
 import yaml
 
 logger = logging.getLogger("vendor_file_cli")
@@ -19,20 +20,23 @@ def load_vendor_creds(config_path: str) -> list[str]:
         list of names of servers (eg. EASTVIEW, LEILA) whose credentials are
         stored in the config file and have been added to env vars
     """
-    with open(config_path, "r") as file:
-        config = yaml.safe_load(file)
-        if config is None:
-            raise ValueError("No credentials found in config file.")
-        vendor_list = [
-            i.split("_HOST")[0]
-            for i in config.keys()
-            if i.endswith("_HOST") and "NSDROP" not in i
-        ]
-        for k, v in config.items():
-            os.environ[k] = v
-        for vendor in vendor_list:
-            os.environ[f"{vendor}_DST"] = f"NSDROP/vendor_records/{vendor.lower()}"
-        return vendor_list
+    if os.getenv("GITHUB_ACTIONS"):
+        config = json.loads(os.getenv("TEST_VENDOR"))
+    else:
+        with open(config_path, "r") as file:
+            config = yaml.safe_load(file)
+    if config is None:
+        raise ValueError("No credentials found in config file.")
+    vendor_list = [
+        i.split("_HOST")[0]
+        for i in config.keys()
+        if i.endswith("_HOST") and "NSDROP" not in i
+    ]
+    for k, v in config.items():
+        os.environ[k] = v
+    for vendor in vendor_list:
+        os.environ[f"{vendor}_DST"] = f"NSDROP/vendor_records/{vendor.lower()}"
+    return vendor_list
 
 
 def logger_config(app_logger: logging.Logger) -> None:
