@@ -217,6 +217,11 @@ def mock_Client(monkeypatch):
     def mock_session(*args, **kwargs):
         return MockClient()
 
+    def mock_path(*args, **kwargs):
+        return "foo"
+
+    monkeypatch.setenv("USERPROFILE", "test")
+    monkeypatch.setattr("os.path.join", mock_path)
     monkeypatch.setattr(Client, "check_file", mock_check_file)
     monkeypatch.setattr(Client, "_Client__connect_to_server", mock_session)
 
@@ -267,27 +272,21 @@ def mock_open_yaml_file(mocker):
 
 
 @pytest.fixture
-def mock_load_creds(monkeypatch, mock_open_yaml_file):
+def mock_load_vendor_creds(monkeypatch, mock_open_yaml_file):
     def mock_path(*args, **kwargs):
         return "testdir"
 
     def mock_load_vendor_creds(*args, **kwargs):
         return ["FOO", "BAR", "BAZ", "NSDROP"]
 
-    def mock_build(*args, **kwargs):
-        return "foo"
-
     monkeypatch.setattr(
-        "vendor_file_cli.config.load_vendor_creds", mock_load_vendor_creds
+        "vendor_file_cli.commands.load_vendor_creds", mock_load_vendor_creds
     )
-    monkeypatch.setattr("vendor_file_cli.validator.configure_sheet", mock_build)
-    monkeypatch.setattr("vendor_file_cli.validator.send_data_to_sheet", mock_build)
     monkeypatch.setenv("USERPROFILE", "test")
     monkeypatch.setattr("os.path.join", mock_path)
-    monkeypatch.setattr("googleapiclient.discovery.build", mock_build)
 
 
 @pytest.fixture
-def cli_runner(mocker, mock_Client, mock_load_creds):
+def cli_runner(mocker, mock_Client, mock_load_vendor_creds):
     runner = CliRunner()
     return runner
