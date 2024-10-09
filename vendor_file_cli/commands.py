@@ -112,8 +112,6 @@ def validate_files(vendor: str, files: list | None) -> None:
     for file in vendor_file_list:
         client = connect("nsdrop")
         file_obj = client.get_file(file=file, remote_dir=file_dir)
-        logger.info(
-            f"({nsdrop_client.name}) Validating {vendor} file: {file_obj.file_name}"
-        )
+        logger.info(f"({client.name}) Validating {vendor} file: {file_obj.file_name}")
         validate_file(file_obj=file_obj, vendor=vendor, write=True)
         client.close()
