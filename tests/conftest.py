@@ -280,7 +280,8 @@ def mock_load_creds(monkeypatch, mock_open_yaml_file):
     monkeypatch.setattr(
         "vendor_file_cli.config.load_vendor_creds", mock_load_vendor_creds
     )
-    monkeypatch.setattr("vendor_file_cli.validator.send_data_to_sheet", "foo")
+    monkeypatch.setattr("vendor_file_cli.validator.configure_sheet", mock_build)
+    monkeypatch.setattr("vendor_file_cli.validator.send_data_to_sheet", mock_build)
     monkeypatch.setenv("USERPROFILE", "test")
     monkeypatch.setattr("os.path.join", mock_path)
     monkeypatch.setattr("googleapiclient.discovery.build", mock_build)
