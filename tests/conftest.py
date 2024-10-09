@@ -220,6 +220,8 @@ def mock_Client(monkeypatch):
     def mock_path(*args, **kwargs):
         return "foo"
 
+    monkeypatch.setattr("vendor_file_cli.validator.configure_sheet", mock_path)
+    monkeypatch.setattr("vendor_file_cli.validator.send_data_to_sheet", mock_path)
     monkeypatch.setenv("USERPROFILE", "test")
     monkeypatch.setattr("os.path.join", mock_path)
     monkeypatch.setattr(Client, "check_file", mock_check_file)
@@ -280,7 +282,7 @@ def mock_load_vendor_creds(monkeypatch, mock_open_yaml_file):
         return ["FOO", "BAR", "BAZ", "NSDROP"]
 
     monkeypatch.setattr(
-        "vendor_file_cli.commands.load_vendor_creds", mock_load_vendor_creds
+        "vendor_file_cli.config.load_vendor_creds", mock_load_vendor_creds
     )
     monkeypatch.setenv("USERPROFILE", "test")
     monkeypatch.setattr("os.path.join", mock_path)
