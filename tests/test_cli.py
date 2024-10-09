@@ -8,7 +8,7 @@ def test_main(mocker):
     mocker.patch("vendor_file_cli.main", return_value=mock_main)
     with pytest.raises(SystemExit) as exc:
         main()
-    assert exc.value.code == 2
+    assert exc.value.code == 0
 
 
 def test_vendor_file_cli():

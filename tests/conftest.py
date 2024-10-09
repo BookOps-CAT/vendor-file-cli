@@ -1,13 +1,10 @@
 import io
-import logging
 import os
 from pymarc import Record, Field, Subfield
 import pytest
 from click.testing import CliRunner
 from file_retriever.connect import Client
 from file_retriever.file import File, FileInfo
-
-logger = logging.getLogger("vendor_file_cli")
 
 
 def stub_marc():
@@ -270,21 +267,26 @@ def mock_open_yaml_file(mocker):
 
 
 @pytest.fixture
-def mock_load_vendor_creds(monkeypatch, mock_open_yaml_file):
+def mock_load_creds(monkeypatch, mock_open_yaml_file):
     def mock_path(*args, **kwargs):
         return "testdir"
 
     def mock_load_vendor_creds(*args, **kwargs):
         return ["FOO", "BAR", "BAZ", "NSDROP"]
 
+    def mock_build(*args, **kwargs):
+        return "foo"
+
     monkeypatch.setattr(
         "vendor_file_cli.config.load_vendor_creds", mock_load_vendor_creds
     )
+    monkeypatch.setattr("vendor_file_cli.validator.send_data_to_sheet", "foo")
     monkeypatch.setenv("USERPROFILE", "test")
     monkeypatch.setattr("os.path.join", mock_path)
+    monkeypatch.setattr("googleapiclient.discovery.build", mock_build)
 
 
 @pytest.fixture
-def cli_runner(mocker, mock_Client, mock_load_vendor_creds):
+def cli_runner(mocker, mock_Client, mock_load_creds):
     runner = CliRunner()
     return runner
