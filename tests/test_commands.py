@@ -1,15 +1,13 @@
-import logging
-import logging.config
-import logging.handlers
 import os
 import pytest
 from file_retriever.connect import Client
 from vendor_file_cli.commands import (
     connect,
     get_vendor_files,
-    load_vendor_creds,
-    logger_config,
+    get_single_file,
+    validate_files,
 )
+from vendor_file_cli.config import load_vendor_creds
 
 
 def test_connect(mock_Client, mocker):
@@ -46,79 +44,95 @@ def test_get_vendor_files(mock_Client, caplog):
     assert "(NSDROP) Connected to server" in caplog.text
     assert "(FOO) Connected to server" in caplog.text
     assert "(FOO) Retrieving list of files in " in caplog.text
+    assert "(FOO) 1 recent file(s) in `foo_src`" in caplog.text
     assert "(FOO) Closing client session" in caplog.text
-
-
-def test_get_vendor_files_no_files(mock_Client, caplog):
-    (
-        os.environ["NSDROP_HOST"],
-        os.environ["NSDROP_USER"],
-        os.environ["NSDROP_PASSWORD"],
-        os.environ["NSDROP_PORT"],
-        os.environ["NSDROP_SRC"],
-    ) = ("sftp.foo.com", "foo", "bar", "22", "foo_src")
-    vendors = ["foo"]
-    get_vendor_files(vendors=vendors, days=1, hours=1, minutes=1)
-    assert "(NSDROP) Connected to server" in caplog.text
-    assert "(FOO) Connected to server" in caplog.text
-    assert "(FOO) Retrieving list of files in " in caplog.text
-    assert "(FOO) Closing client session" in caplog.text
-
-
-def test_logger_config():
-    cli_logger = logging.getLogger("vendor_file_cli")
-    while cli_logger.handlers:
-        handler = cli_logger.handlers[0]
-        cli_logger.removeHandler(handler)
-        handler.close()
-    logger_config(cli_logger)
-    config_handlers = cli_logger.handlers
-    handler_types = [type(i) for i in config_handlers]
-    assert len(handler_types) == 2
-    assert handler_types == [
-        logging.StreamHandler,
-        logging.handlers.RotatingFileHandler,
-    ]
-    assert config_handlers[0].level == 10
     assert (
-        config_handlers[0].formatter._fmt == "%(asctime)s - %(levelname)s - %(message)s"
+        "(NSDROP) Checking list of 1 files against `NSDROP/vendor_records/foo`"
+        in caplog.text
     )
+    assert (
+        "(NSDROP) 1 of 1 files missing from `NSDROP/vendor_records/foo`" in caplog.text
+    )
+    assert "(FOO) Fetching foo.mrc from `foo_src`" in caplog.text
+    assert (
+        "(NSDROP) Checking for file in `NSDROP/vendor_records/foo` before writing"
+        in caplog.text
+    )
+    assert "(NSDROP) Writing foo.mrc to `NSDROP/vendor_records/foo`" in caplog.text
 
 
-def test_load_vendor_creds(mocker):
-    yaml_string = """
-        FOO_HOST: foo
-        FOO_USER: bar
-        FOO_PASSWORD: baz
-        FOO_PORT: '21'
-        FOO_SRC: foo_src
-        BAR_HOST: foo
-        BAR_USER: bar
-        BAR_PASSWORD: baz
-        BAR_PORT: '22'
-        BAR_SRC: bar_src
-    """
-    m = mocker.mock_open(read_data=yaml_string)
-    mocker.patch("builtins.open", m)
-
-    client_list = load_vendor_creds("foo.yaml")
-    assert len(client_list) == 2
-    assert client_list == ["FOO", "BAR"]
-    assert os.environ["FOO_HOST"] == "foo"
-    assert os.environ["FOO_USER"] == "bar"
-    assert os.environ["FOO_PASSWORD"] == "baz"
-    assert os.environ["FOO_PORT"] == "21"
-    assert os.environ["FOO_SRC"] == "foo_src"
+def test_get_vendor_files_no_files(mock_Client, caplog, mock_creds):
+    get_vendor_files(vendors=["eastview"], days=1, hours=1, minutes=1)
+    assert "(NSDROP) Connected to server" in caplog.text
+    assert "(EASTVIEW) Connected to server" in caplog.text
+    assert "(EASTVIEW) Retrieving list of files in " in caplog.text
+    assert "(EASTVIEW) 0 recent file(s) in `eastview_src`" in caplog.text
+    assert "(EASTVIEW) Closing client session" in caplog.text
 
 
-def test_load_vendor_creds_empty_yaml(mocker):
-    yaml_string = ""
-    m = mocker.mock_open(read_data=yaml_string)
-    mocker.patch("builtins.open", m)
+def test_get_single_file_no_validation(mock_Client, stub_file_info, caplog, mock_creds):
+    vendor_client = connect("eastview")
+    nsdrop_client = connect("nsdrop")
+    get_single_file(
+        vendor="eastview",
+        file=stub_file_info,
+        vendor_client=vendor_client,
+        nsdrop_client=nsdrop_client,
+    )
+    assert "(EASTVIEW) Connected to server" in caplog.text
+    assert "(NSDROP) Connected to server" in caplog.text
+    assert "(EASTVIEW) Fetching foo.mrc from `eastview_src`" in caplog.text
+    assert (
+        "(NSDROP) Checking for file in `NSDROP/vendor_records/eastview` before writing"
+        in caplog.text
+    )
+    assert "(NSDROP) Writing foo.mrc to `NSDROP/vendor_records/eastview`" in caplog.text
 
-    with pytest.raises(ValueError) as exc:
-        load_vendor_creds("foo.yaml")
-    assert "No credentials found in config file" in str(exc.value)
+
+def test_get_single_file_with_validation(
+    mock_Client, stub_file_info, caplog, mock_creds
+):
+    vendor_client = connect("eastview")
+    nsdrop_client = connect("nsdrop")
+    get_single_file(
+        vendor="eastview",
+        file=stub_file_info,
+        vendor_client=vendor_client,
+        nsdrop_client=nsdrop_client,
+    )
+    assert "(EASTVIEW) Connected to server" in caplog.text
+    assert "(NSDROP) Connected to server" in caplog.text
+    assert "(EASTVIEW) Fetching foo.mrc from `eastview_src`" in caplog.text
+    assert "(NSDROP) Validating eastview file: foo.mrc" in caplog.text
+    assert (
+        "(NSDROP) Checking for file in `NSDROP/vendor_records/eastview` before writing"
+        in caplog.text
+    )
+    assert "(NSDROP) Writing foo.mrc to `NSDROP/vendor_records/eastview`" in caplog.text
+
+
+def test_validate_files(mock_Client, caplog, mock_creds):
+    validate_files(vendor="eastview", files=None)
+    assert (
+        "(NSDROP) Retrieving list of files in `NSDROP/vendor_records/eastview`"
+        in caplog.text
+    )
+    assert "(NSDROP) 1 file(s) in `NSDROP/vendor_records/eastview`" in caplog.text
+    assert (
+        "(NSDROP) Fetching foo.mrc from `NSDROP/vendor_records/eastview`" in caplog.text
+    )
+    assert "(NSDROP) Validating eastview file: foo.mrc" in caplog.text
+
+
+def test_validate_files_with_list(mock_Client, caplog, mock_creds):
+    validate_files(vendor="eastview", files=["foo.mrc", "bar.mrc"])
+    assert (
+        "(NSDROP) Fetching foo.mrc from `NSDROP/vendor_records/eastview`" in caplog.text
+    )
+    assert (
+        "(NSDROP) Fetching bar.mrc from `NSDROP/vendor_records/eastview`" in caplog.text
+    )
+    assert "(NSDROP) Validating eastview file: foo.mrc" in caplog.text
 
 
 @pytest.mark.livetest
