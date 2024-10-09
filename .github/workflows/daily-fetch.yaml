@@ -7,7 +7,7 @@ env:
   GH_REPO: ${{ github.repository }}
   TEST_VENDOR: ${{ secrets.TEST_VENDOR }}
 jobs:
-  test:
+  fetch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

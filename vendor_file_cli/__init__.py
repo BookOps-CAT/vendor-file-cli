@@ -110,9 +110,10 @@ def get_recent_vendor_files(vendor: str, days: int, hours: int, minutes: int) ->
     help="Which vendor to validate files for.",
 )
 def validate_vendor_files(vendor: str) -> None:
-    load_vendor_creds(
-        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
-    )
+    if not os.getenv("GITHUB_ACTIONS"):
+        load_vendor_creds(
+            os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
+        )
     validate_files(vendor=vendor, files=None)
 
 
