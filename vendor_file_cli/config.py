@@ -1,7 +1,6 @@
 import logging
 import logging.handlers
 import os
-import json
 import yaml
 
 logger = logging.getLogger("vendor_file_cli")
