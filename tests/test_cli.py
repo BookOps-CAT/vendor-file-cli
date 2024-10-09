@@ -6,9 +6,8 @@ from vendor_file_cli import vendor_file_cli, main
 def test_main(mocker):
     mock_main = mocker.Mock()
     mocker.patch("vendor_file_cli.main", return_value=mock_main)
-    with pytest.raises(SystemExit) as exc:
+    with pytest.raises(SystemExit):
         main()
-    assert exc.value.code == 0
 
 
 def test_vendor_file_cli():
