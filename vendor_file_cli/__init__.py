@@ -2,8 +2,8 @@ import logging
 import logging.config
 import os
 import click
-
-from vendor_file_cli.commands import load_vendor_creds, get_vendor_files, logger_config
+from vendor_file_cli.commands import get_vendor_files, validate_files
+from vendor_file_cli.config import load_vendor_creds, logger_config
 
 
 @click.group
@@ -16,7 +16,7 @@ def vendor_file_cli() -> None:
 
 @vendor_file_cli.command(
     "all-vendor-files",
-    short_help="Retrieve all vendor files that are not in NSDROP.",
+    short_help="Retrieve and validate files that are not in NSDROP.",
 )
 def get_all_vendor_files() -> None:
     """Retrieve files from vendor server not present in vendor's NSDROP directory."""
@@ -36,19 +36,7 @@ def get_available_vendors() -> None:
 
 
 @vendor_file_cli.command(
-    "daily-vendor-files",
-    short_help="Retrieve files created in last day for all vendors",
-)
-def get_daily_vendor_files() -> None:
-    """Retrieve files updated within last day from remote server for all vendor(s)."""
-    vendor_list = load_vendor_creds(
-        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
-    )
-    get_vendor_files(vendors=vendor_list, days=1)
-
-
-@vendor_file_cli.command(
-    "recent-vendor-files",
+    "vendor-files",
     short_help="Retrieve files from remote server based on timedelta.",
 )
 @click.option(
@@ -109,6 +97,23 @@ def get_recent_vendor_files(vendor: str, days: int, hours: int, minutes: int) ->
     else:
         vendor_list = [i.upper() for i in vendor]
     get_vendor_files(vendors=vendor_list, days=days, hours=hours, minutes=minutes)
+
+
+@vendor_file_cli.command(
+    "validate-file",
+    short_help="Validate vendor file on NSDROP.",
+)
+@click.option(
+    "--vendor",
+    "-v",
+    "vendor",
+    help="Which vendor to validate files for.",
+)
+def validate_vendor_files(vendor: str) -> None:
+    load_vendor_creds(
+        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
+    )
+    validate_files(vendor=vendor, files=None)
 
 
 def main():
