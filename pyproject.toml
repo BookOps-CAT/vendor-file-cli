@@ -12,6 +12,12 @@ click = "^8.1.7"
 pyyaml = "^6.0.2"
 types-pyyaml = "^6.0.12.20240808"
 file-retriever = {git = "https://github.com/BookOps-CAT/file-retriever.git"}
+record-validator = {git = "https://github.com/BookOps-CAT/record-validator.git"}
+pymarc = "^5.2.2"
+google-api-python-client = "^2.146.0"
+google-auth-oauthlib = "^1.2.1"
+pandas = "^2.2.3"
+pandas-stubs = "^2.2.2.240909"
 
 
 [tool.poetry.group.dev.dependencies]
