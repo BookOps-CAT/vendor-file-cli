@@ -20,7 +20,13 @@ logger = logging.getLogger("vendor_file_cli")
 
 def configure_sheet() -> Credentials:
     """
-    A function to append data to a google sheet for a specific vendor
+    Get or update credentials for google sheets API and save token to file.
+
+    Args:
+        None
+
+    Returns:
+        google.oauth2.credentials.Credentials: Credentials object for google sheet API.
     """
     scopes = ["https://www.googleapis.com/auth/spreadsheets"]
     cred_path = os.path.join(
@@ -42,6 +48,7 @@ def configure_sheet() -> Credentials:
 
 
 def get_control_number(record: Record) -> str:
+    """Get control number from MARC record to output to google sheet."""
     try:
         return str(record["001"].data)
     except KeyError:
@@ -73,6 +80,7 @@ def get_control_number(record: Record) -> str:
 
 
 def map_vendor_to_code(vendor: str) -> str:
+    """Map vendor name to vendor code for output to google sheet."""
     vendor_map = {
         "EASTVIEW": "EVP",
         "LEILA": "LEILA",
@@ -85,7 +93,7 @@ def map_vendor_to_code(vendor: str) -> str:
 
 
 def read_marc_file_stream(file_obj: File) -> Generator[Record, None, None]:
-    """for file on NSDROP as File object"""
+    """Read the filestream within a File object using pymarc"""
     fh = file_obj.file_stream.getvalue()
     reader = MARCReader(fh)
     for record in reader:
@@ -94,7 +102,19 @@ def read_marc_file_stream(file_obj: File) -> Generator[Record, None, None]:
 
 def send_data_to_sheet(vendor_code: str, values: list, creds: Credentials):
     """
-    A function to append data to a google sheet for a specific vendor
+    A function to write data to a google sheet for a specific vendor. The function
+    uses the google sheets API to write data to the sheet. The function takes the
+    vendor code, the values to write to the sheet, and the credentials for the google
+    sheet API.
+
+    Args:
+
+        vendor_code: the vendor code for the vendor to write data for.
+        values: a list of values to write to the google sheet.
+        creds: the credentials for the google sheets API as a `Credentials` object.
+
+    Returns:
+        the response from the google sheets API as a dictionary.
     """
     body = {
         "majorDimension": "ROWS",
@@ -124,6 +144,17 @@ def send_data_to_sheet(vendor_code: str, values: list, creds: Credentials):
 
 
 def validate_single_record(record: Record) -> dict[str, Any]:
+    """
+    Validate a single MARC record using the RecordModel. If the record is invalid,
+    return a dictionary with the error information. If the record is valid, return
+    a dictionary with the validation information.
+
+    Args:
+        record: pymarc.Record object representing the record to validate.
+
+    Returns:
+        dictionary with validation output.
+    """
     try:
         RecordModel(leader=str(record.leader), fields=record.fields)
         out = {
@@ -152,6 +183,18 @@ def validate_single_record(record: Record) -> dict[str, Any]:
 
 
 def validate_file(file_obj: File, vendor: str, write: bool) -> None:
+    """
+    Validate a file of MARC records and output to google sheet.
+
+    Args:
+        file_obj: `File` object representing the file to validate.
+        vendor: name of vendor to validate file for.
+        write: whether to write the validation results to the google sheet.
+
+    Returns:
+        None
+
+    """
     if vendor.upper() in ["EASTVIEW", "LEILA", "AMALIVRE_SASB"]:
         vendor_code = map_vendor_to_code(vendor)
         record_count = len([record for record in read_marc_file_stream(file_obj)])

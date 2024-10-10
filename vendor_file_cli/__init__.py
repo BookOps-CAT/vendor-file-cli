@@ -19,7 +19,21 @@ def vendor_file_cli() -> None:
     short_help="Retrieve and validate files that are not in NSDROP.",
 )
 def get_all_vendor_files() -> None:
-    """Retrieve files from vendor server not present in vendor's NSDROP directory."""
+    """
+    Retrieve files from vendor server not present in vendor's NSDROP directory. Creates
+    list of files on vendor server and list of files in NSDROP directory. Copies files
+    from vendor server to NSDROP directory if they are not already present. Validates
+    files for Eastview, Leila, and Amalivre (SASB) before copying them to NSDROP and
+    writes output of validation to google sheet. Files are copied to
+    NSDROP/vendor_records/{vendor_name}.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    """
     vendor_list = load_vendor_creds(
         os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
     )
@@ -33,6 +47,42 @@ def get_available_vendors() -> None:
         os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
     )
     click.echo(f"Available vendors: {vendor_list}")
+
+
+@vendor_file_cli.command(
+    "validate-file",
+    short_help="Validate vendor file on NSDROP.",
+)
+@click.option(
+    "--vendor",
+    "-v",
+    "vendor",
+    help="Which vendor to validate files for.",
+)
+@click.option(
+    "--file",
+    "-f",
+    "file",
+    help="The file you would like to validate.",
+)
+def validate_vendor_files(vendor: str, file: str) -> None:
+    """
+    Validate files for a specific vendor.
+
+    Args:
+        vendor:
+            name of vendor to validate files for. files will be validated for
+            the specified vendor
+        file:
+            name of file to validate
+    Returns:
+        None
+    """
+    if not os.getenv("GITHUB_ACTIONS"):
+        load_vendor_creds(
+            os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
+        )
+    validate_files(vendor=vendor, files=[file])
 
 
 @vendor_file_cli.command(
@@ -63,15 +113,7 @@ def get_available_vendors() -> None:
     type=int,
     help="How many hours back to retrieve files.",
 )
-@click.option(
-    "--minutes",
-    "-m",
-    "minutes",
-    default=0,
-    type=int,
-    help="How many minutes back to retrieve files.",
-)
-def get_recent_vendor_files(vendor: str, days: int, hours: int, minutes: int) -> None:
+def get_recent_vendor_files(vendor: str, days: int, hours: int) -> None:
     """
     Retrieve files from remote server for specified vendor(s).
 
@@ -85,8 +127,9 @@ def get_recent_vendor_files(vendor: str, days: int, hours: int, minutes: int) ->
             number of days to go back and retrieve files from
         hours:
             number of hours to go back and retrieve files from
-        minutes:
-            number of minutes to go back and retrieve files from
+
+    Returns:
+        None
 
     """
     all_available_vendors = load_vendor_creds(
@@ -96,25 +139,7 @@ def get_recent_vendor_files(vendor: str, days: int, hours: int, minutes: int) ->
         vendor_list = all_available_vendors
     else:
         vendor_list = [i.upper() for i in vendor]
-    get_vendor_files(vendors=vendor_list, days=days, hours=hours, minutes=minutes)
-
-
-@vendor_file_cli.command(
-    "validate-file",
-    short_help="Validate vendor file on NSDROP.",
-)
-@click.option(
-    "--vendor",
-    "-v",
-    "vendor",
-    help="Which vendor to validate files for.",
-)
-def validate_vendor_files(vendor: str) -> None:
-    if not os.getenv("GITHUB_ACTIONS"):
-        load_vendor_creds(
-            os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
-        )
-    validate_files(vendor=vendor, files=None)
+    get_vendor_files(vendors=vendor_list, days=days, hours=hours)
 
 
 def main():

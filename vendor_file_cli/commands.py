@@ -37,12 +37,11 @@ def get_vendor_files(
     vendors: list[str],
     days: int = 0,
     hours: int = 0,
-    minutes: int = 0,
 ) -> None:
     """
     Retrieve files from remote server for vendors in `vendor_list`. Forms timedelta
-    object from `days`, `hours`, and `minutes` and creates list of files created within
-    that time delta. If days, hours, and minutes args are not provided, all files that
+    object from `days` and `hours` and creates list of files created within
+    that time delta. If days and hours args are not provided, all files that
     are in the vendor's remote directory will be included in the list. Compares that
     list of files to the list of files in the vendor's NSDROP directory only copies
     the files that are not already present in the NSDROP directory. Will validate files
@@ -52,14 +51,13 @@ def get_vendor_files(
         vendors: list of vendor names
         days: number of days to retrieve files from (default 0)
         hours: number of hours to retrieve files from (default 0)
-        minutes: number of minutes to retrieve files from (default 0)
 
     Returns:
         None
 
     """
     nsdrop = connect("nsdrop")
-    timedelta = datetime.timedelta(days=days, hours=hours, minutes=minutes)
+    timedelta = datetime.timedelta(days=days, hours=hours)
     for vendor in vendors:
         with connect(vendor) as client:
             file_list = client.list_file_info(
@@ -82,6 +80,20 @@ def get_vendor_files(
 def get_single_file(
     vendor: str, file: FileInfo, vendor_client: Client, nsdrop_client: Client
 ) -> None:
+    """
+    Get a file from a vendor server and put it in the NSDROP directory.
+    Validates the file if the vendor is EASTVIEW, LEILA, or AMALIVRE_SASB.
+
+    Args:
+        vendor: name of vendor
+        file: `FileInfo` object representing the file to retrieve
+        vendor_client: `Client` object for the vendor server
+        nsdrop_client: `Client` object for the NSDROP server
+
+    Returns:
+        None
+
+    """
     fetched_file = vendor_client.get_file(
         file=file, remote_dir=os.environ[f"{vendor.upper()}_SRC"]
     )
@@ -99,6 +111,19 @@ def get_single_file(
 
 
 def validate_files(vendor: str, files: list | None) -> None:
+    """
+    Validate files on NSDROP for a speific vendor.
+
+    Args:
+        vendor:
+            name of vendor
+        files:
+            list of file names to validate (default None). If None, all
+            files in the vendor's directory on NSDROP will be validated.
+
+    Returns:
+        None
+    """
     file_dir = os.environ[f"{vendor.upper()}_DST"]
     vendor_file_list = []
     with connect("nsdrop") as nsdrop_client:
