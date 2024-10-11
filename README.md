@@ -36,16 +36,26 @@ The following information is also available using `validator --help`
 ##### Retrieve all new files
 `$ fetch all-vendor-files`
 
-Reads credentials for all vendor servers from a `yaml` file. Logs into each vendor's server, creates a list of files on the server and a list of files in the corresponding directory on NSDROP. Copies all files from the vendor's server that are not in the vendor's directory on NSDROP. For select vendors the records will be validated before they are copied to NSDROP(currently these vendors are Eastview, Leila, and Amalivre (SASB)). The validation output is written to a to [google sheet](https://docs.google.com/spreadsheets/d/1ZYuhMIE1WiduV98Pdzzw7RwZ08O-sJo7HJihWVgSOhQ/edit?usp=sharing).
+Reads credentials for all vendor servers from a `yaml` file. Retrieves all new files for all vendors with credentials in the `yaml` file. 
+ - Logs into each vendor's server, 
+ - Creates a lists of files on the server and in the corresponding directory on NSDROP,
+ - Copies all files from the vendor's server that are not in the NSDROP directory, 
+ - For select vendors the records will be validated before they are copied to NSDROP
+   - Currently these vendors are Eastview, Leila, and Amalivre (SASB) 
+   - The validation output is written to a [google sheet](https://docs.google.com/spreadsheets/d/1ZYuhMIE1WiduV98Pdzzw7RwZ08O-sJo7HJihWVgSOhQ/edit?usp=sharing).
 
+##### List all vendors configured to work with CLI
 `$ fetch available-vendors`
 
-Reads the local `yaml` config file and prints the list of vendors with credentials.
+Reads the local `yaml` config file and prints the list of vendors who are configured to work with the CLI.
 
+##### Validate vendor .mrc files
 `$ fetch validate-file`
  - `-v`/`--vendor` vendor whose files you would like to validate
 
 Validates files for the vendor specified using the `-v`/`--vendor` option. 
+
+##### Retrieve files for a specified vendor within a specific timeframe
 
 `$ fetch vendor-files`
  - `-v`/`--vendor` vendor whose files you would like to validate

@@ -62,7 +62,7 @@ def test_get_vendor_files(mock_Client, caplog):
 
 
 def test_get_vendor_files_no_files(mock_Client, caplog, mock_creds):
-    get_vendor_files(vendors=["eastview"], days=1, hours=1, minutes=1)
+    get_vendor_files(vendors=["eastview"], days=1, hours=1)
     assert "(NSDROP) Connected to server" in caplog.text
     assert "(EASTVIEW) Connected to server" in caplog.text
     assert "(EASTVIEW) Retrieving list of files in " in caplog.text
