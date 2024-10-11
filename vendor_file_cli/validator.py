@@ -49,34 +49,27 @@ def configure_sheet() -> Credentials:
 
 def get_control_number(record: Record) -> str:
     """Get control number from MARC record to output to google sheet."""
-    try:
-        return str(record["001"].data)
-    except KeyError:
-        pass
-    try:
-        return record["035"]["a"]
-    except KeyError:
-        pass
-    try:
-        return record["020"]["a"]
-    except KeyError:
-        pass
-    try:
-        return record["010"]["a"]
-    except KeyError:
-        pass
-    try:
-        return record["022"]["a"]
-    except KeyError:
-        pass
-    try:
-        return record["024"]["a"]
-    except KeyError:
-        pass
-    try:
-        return record["852"]["h"]
-    except KeyError:
-        return "None"
+    field = record.get("001", None)
+    if field is not None:
+        control_number = field.data
+        if control_number is not None:
+            return control_number
+    field_subfield_pairs = [
+        ("035", "a"),
+        ("020", "a"),
+        ("010", "a"),
+        ("022", "a"),
+        ("024", "a"),
+        ("852", "h"),
+    ]
+    for f, s in field_subfield_pairs:
+        while record.get(f, None) is not None:
+            field = record.get(f, None)
+            if field is not None:
+                subfield = field.get(s)
+                if subfield is not None:
+                    return subfield
+    return "None"
 
 
 def map_vendor_to_code(vendor: str) -> str:

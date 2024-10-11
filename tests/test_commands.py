@@ -61,7 +61,7 @@ def test_get_vendor_files(mock_Client, caplog):
     assert "(NSDROP) Writing foo.mrc to `NSDROP/vendor_records/foo`" in caplog.text
 
 
-def test_get_vendor_files_no_files(mock_Client, caplog, mock_vendor_creds):
+def test_get_vendor_files_no_files(mock_Client, caplog):
     get_vendor_files(vendors=["eastview"], days=1, hours=1)
     assert "(NSDROP) Connected to server" in caplog.text
     assert "(EASTVIEW) Connected to server" in caplog.text
@@ -70,9 +70,7 @@ def test_get_vendor_files_no_files(mock_Client, caplog, mock_vendor_creds):
     assert "(EASTVIEW) Closing client session" in caplog.text
 
 
-def test_get_single_file_no_validation(
-    mock_Client, stub_file_info, caplog, mock_vendor_creds
-):
+def test_get_single_file_no_validation(mock_Client, stub_file_info, caplog):
     vendor_client = connect("eastview")
     nsdrop_client = connect("nsdrop")
     get_single_file(
@@ -91,9 +89,7 @@ def test_get_single_file_no_validation(
     assert "(NSDROP) Writing foo.mrc to `NSDROP/vendor_records/eastview`" in caplog.text
 
 
-def test_get_single_file_with_validation(
-    mock_Client, stub_file_info, caplog, mock_vendor_creds
-):
+def test_get_single_file_with_validation(mock_Client, stub_file_info, caplog):
     vendor_client = connect("eastview")
     nsdrop_client = connect("nsdrop")
     get_single_file(
@@ -113,7 +109,7 @@ def test_get_single_file_with_validation(
     assert "(NSDROP) Writing foo.mrc to `NSDROP/vendor_records/eastview`" in caplog.text
 
 
-def test_validate_files(mock_Client, caplog, mock_vendor_creds):
+def test_validate_files(mock_Client, caplog):
     validate_files(vendor="eastview", files=None)
     assert (
         "(NSDROP) Retrieving list of files in `NSDROP/vendor_records/eastview`"
@@ -126,7 +122,7 @@ def test_validate_files(mock_Client, caplog, mock_vendor_creds):
     assert "(NSDROP) Validating eastview file: foo.mrc" in caplog.text
 
 
-def test_validate_files_with_list(mock_Client, caplog, mock_vendor_creds):
+def test_validate_files_with_list(mock_Client, caplog):
     validate_files(vendor="eastview", files=["foo.mrc", "bar.mrc"])
     assert (
         "(NSDROP) Fetching foo.mrc from `NSDROP/vendor_records/eastview`" in caplog.text
