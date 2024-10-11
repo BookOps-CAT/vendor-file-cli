@@ -62,4 +62,5 @@ Validates files for the vendor specified using the `-v`/`--vendor` option.
  - `-d`/`--day` number of days to go back and retrieve files from
  - `-h`/`--hour` number of hours to go back and retrieve files from
 
-Retrieves files for a specified vendor within the specified timeframe. If neither `--day` nor `--hour` is provided, all files will be retrieved. If the file already exists in the corresponding directory on NSDROP, it will be skipped.
+Retrieves files for a specified vendor within the specified timeframe. If neither `--day` nor `--hour` is provided, all files will be retrieved. If the file already exists in the corresponding directory on NSDROP, it will be skipped. Command accepts multiple args passed to `-v`/`--vendor`, eg. to fetch files from Eastview and Leila created within the last 10 days:
+   `$ fetch vendor-files -v eastview -v leila -d 10`
