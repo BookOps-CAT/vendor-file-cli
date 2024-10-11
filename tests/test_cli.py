@@ -84,16 +84,16 @@ def test_vendor_file_cli_get_recent_vendor_files_multiple_vendors(cli_runner, ca
 def test_vendor_file_cli_validate_vendor_files(cli_runner, caplog):
     result = cli_runner.invoke(
         cli=vendor_file_cli,
-        args=["validate-file", "-v", "foo"],
+        args=["validate-file", "-v", "foo", "-f", "foo.mrc"],
     )
     assert result.exit_code == 0
     assert "(NSDROP) Connected to server" in caplog.text
     assert (
-        "(NSDROP) Retrieving list of files in `NSDROP/vendor_records/foo`"
+        "(NSDROP) Retrieving file info for foo.mrc from NSDROP/vendor_records/foo"
         in caplog.text
     )
-    assert "(NSDROP) 1 file(s) in `NSDROP/vendor_records/foo`" in caplog.text
     assert "(NSDROP) Closing client session" in caplog.text
     assert "(NSDROP) Connection closed" in caplog.text
     assert "(NSDROP) Connected to server" in caplog.text
     assert "(NSDROP) Fetching foo.mrc from `NSDROP/vendor_records/foo`" in caplog.text
+    assert "(NSDROP) Validating foo file: foo.mrc" in caplog.text
