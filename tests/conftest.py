@@ -1,6 +1,6 @@
 import io
 import os
-from googleapiclient.errors import HttpError
+from googleapiclient.errors import HttpError  # type: ignore
 from pymarc import Record, Field, Subfield
 import pytest
 from click.testing import CliRunner
@@ -306,7 +306,7 @@ class MockFlow:
 
 
 @pytest.fixture
-def mock_sheet_config_no_creds(monkeypatch, mock_open_file):
+def mock_sheet_config_no_creds(monkeypatch, mock_sheet_config, mock_open_file):
     def mock_flow(*args, **kwargs):
         return MockFlow()
 
