@@ -1,10 +1,36 @@
 from pymarc import Field, Subfield
 import pytest
 from vendor_file_cli.validator import (
+    configure_sheet,
     get_control_number,
     map_vendor_to_code,
+    send_data_to_sheet,
     validate_single_record,
 )
+
+
+def test_configure_sheet_success(mock_sheet_config):
+    creds = configure_sheet()
+    assert creds.token == "foo"
+    assert creds.valid is True
+    assert creds.expired is False
+    assert creds.refresh_token is not None
+
+
+def test_configure_sheet_invalid(mock_sheet_config_creds_invalid):
+    creds = configure_sheet()
+    assert creds.token == "baz"
+    assert creds.valid is True
+    assert creds.expired is False
+    assert creds.refresh_token is not None
+
+
+def test_configure_sheet_generate_new_creds(mock_sheet_config_no_creds):
+    creds = configure_sheet()
+    assert creds.token == "foo"
+    assert creds.valid is True
+    assert creds.expired is False
+    assert creds.refresh_token is not None
 
 
 def test_get_control_number(stub_record):
@@ -57,6 +83,35 @@ def test_get_control_number_none(stub_record):
 )
 def test_map_vendor_to_code(vendor, code):
     assert map_vendor_to_code(vendor) == code
+
+
+def test_send_data_to_sheet(mock_sheet_config, mock_sheet_resource):
+    creds = configure_sheet()
+    data = send_data_to_sheet(vendor_code="EVP", values=[["foo", "bar"]], creds=creds)
+    assert sorted(list(data.keys())) == sorted(
+        [
+            "spreadsheetId",
+            "tableRange",
+        ]
+    )
+
+
+def test_send_data_to_sheet_http_error(
+    caplog, mock_sheet_config, mock_sheet_http_error
+):
+    creds = configure_sheet()
+    data = send_data_to_sheet(vendor_code="EVP", values=[["foo", "bar"]], creds=creds)
+    assert data is None
+    assert "Error occurred while sending data to google sheet: " in caplog.text
+
+
+def test_send_data_to_sheet_timeout_error(
+    caplog, mock_sheet_config, mock_sheet_timeout_error
+):
+    creds = configure_sheet()
+    data = send_data_to_sheet(vendor_code="EVP", values=[["foo", "bar"]], creds=creds)
+    assert data is None
+    assert "Error occurred while sending data to google sheet: " in caplog.text
 
 
 def test_validate_single_record(stub_record):
