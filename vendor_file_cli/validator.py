@@ -1,139 +1,158 @@
 from collections import defaultdict
-import datetime
+from datetime import datetime, timedelta, timezone
 import logging
 import os
-from typing import Any, Generator
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-import pandas as pd
+from typing import Any, List, Union
 from pydantic import ValidationError
-from pymarc import MARCReader, Record
-from file_retriever.file import File
+from pymarc import Record
+from file_retriever.file import File, FileInfo
+from file_retriever.connect import Client
 from record_validator.marc_models import RecordModel
 from record_validator.marc_errors import MarcValidationError
+from vendor_file_cli.utils import (
+    read_marc_file_stream,
+    get_control_number,
+    write_data_to_sheet,
+)
 
-logger = logging.getLogger("vendor_file_cli")
+logger = logging.getLogger(__name__)
 
 
-def configure_sheet() -> Credentials:
+def get_single_file(
+    vendor: str, file: FileInfo, vendor_client: Client, nsdrop_client: Client
+) -> File:
     """
-    Get or update credentials for google sheets API and save token to file.
+    Get a file from a vendor server and put it in the NSDROP directory.
+    Validates the file if the vendor is EASTVIEW, LEILA, or AMALIVRE_SASB.
 
     Args:
+        vendor: name of vendor
+        file: `FileInfo` object representing the file to retrieve
+        vendor_client: `Client` object for the vendor server
+        nsdrop_client: `Client` object for the NSDROP server
+
+    Returns:
         None
 
-    Returns:
-        google.oauth2.credentials.Credentials: Credentials object for google sheet API.
     """
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    cred_path = os.path.join(
-        os.environ["USERPROFILE"], ".cred/.google/desktop-app.json"
+    if (
+        file.file_name.startswith("ADD") or file.file_name.startswith("NEW")
+    ) and vendor.lower() == "bakertaylor_bpl":
+        remote_dir = ""
+    else:
+        remote_dir = os.environ[f"{vendor.upper()}_SRC"]
+    fetched_file = vendor_client.get_file(file=file, remote_dir=remote_dir)
+    if vendor.upper() in ["EASTVIEW", "LEILA", "AMALIVRE_SASB"]:
+        logger.debug(
+            f"({nsdrop_client.name}) Validating {vendor} file: {fetched_file.file_name}"
+        )
+        out_data = validate_file(file_obj=fetched_file, vendor=vendor)
+        write_data_to_sheet(out_data)
+    nsdrop_client.put_file(
+        file=fetched_file,
+        dir=os.environ[f"{vendor.upper()}_DST"],
+        remote=True,
+        check=True,
     )
-    token_path = os.path.join(os.environ["USERPROFILE"], ".cred/.google/token.json")
-
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, scopes)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(cred_path, scopes)
-            creds = flow.run_local_server()
-        with open(token_path, "w") as token:
-            token.write(creds.to_json())
-    return creds
+    return fetched_file
 
 
-def get_control_number(record: Record) -> str:
-    """Get control number from MARC record to output to google sheet."""
-    field = record.get("001", None)
-    if field is not None:
-        control_number = field.data
-        if control_number is not None:
-            return control_number
-    field_subfield_pairs = [
-        ("035", "a"),
-        ("020", "a"),
-        ("010", "a"),
-        ("022", "a"),
-        ("024", "a"),
-        ("852", "h"),
+def get_vendor_file_list(
+    vendor: str, timedelta: timedelta, nsdrop_client: Client, vendor_client: Client
+) -> list[FileInfo]:
+    """"""
+    nsdrop_files: Union[List[FileInfo], List[str]]
+    vendor_files: Union[List[FileInfo], List[str]]
+
+    today = datetime.now(tz=timezone.utc)
+    src_dir = os.environ[f"{vendor.upper()}_SRC"]
+    dst_dir = os.environ[f"{vendor.upper()}_DST"]
+    if vendor.lower() == "midwest_nypl":
+        nsdrop_files = nsdrop_client.list_files(remote_dir=dst_dir)
+        vendor_files = vendor_client.list_files(remote_dir=src_dir)
+        files_to_check = [
+            i
+            for i in vendor_files
+            if ".mrc" in i
+            and i.split("_ALL")[0].endswith("2024")
+            and int(i.split("_")[1][3:5]) >= 7
+            and i not in nsdrop_files
+        ]
+        file_data = [
+            vendor_client.get_file_info(
+                file_name=i, remote_dir=os.environ["MIDWEST_NYPL_SRC"]
+            )
+            for i in files_to_check
+        ]
+    else:
+        nsdrop_files = nsdrop_client.list_file_info(dst_dir)
+        vendor_files = vendor_client.list_file_info(src_dir)
+        file_data = [
+            i
+            for i in vendor_files
+            if i.file_name not in [j.file_name for j in nsdrop_files]
+        ]
+        if vendor.lower() == "bakertaylor_bpl":
+            other_files = vendor_client.list_file_info("")
+            file_data.extend(
+                [
+                    i
+                    for i in other_files
+                    if i.file_name not in [j.file_name for j in nsdrop_files]
+                ]
+            )
+    files_to_get = [
+        i
+        for i in file_data
+        if datetime.fromtimestamp(i.file_mtime, tz=timezone.utc) >= today - timedelta
     ]
-    for f, s in field_subfield_pairs:
-        while record.get(f, None) is not None:
-            field = record.get(f, None)
-            if field is not None:
-                subfield = field.get(s)
-                if subfield is not None:
-                    return subfield
-    return "None"
+    logger.debug(
+        f"({vendor_client.name}) {len(files_to_get)} file(s) on "
+        f"{vendor_client.name} server to copy to NSDROP"
+    )
+    return files_to_get
 
 
-def map_vendor_to_code(vendor: str) -> str:
-    """Map vendor name to vendor code for output to google sheet."""
-    vendor_map = {
-        "EASTVIEW": "EVP",
-        "LEILA": "LEILA",
-        "AMALIVRE_SASB": "AUXAM",
-        "AMALIVRE_LPA": "AUXAM",
-        "AMALIVRE_SCHOMBURG": "AUXAM",
-        "AMALIVRE_RL": "AUXAM",
-    }
-    return vendor_map[vendor.upper()]
-
-
-def read_marc_file_stream(file_obj: File) -> Generator[Record, None, None]:
-    """Read the filestream within a File object using pymarc"""
-    fh = file_obj.file_stream.getvalue()
-    reader = MARCReader(fh)
-    for record in reader:
-        yield record
-
-
-def send_data_to_sheet(vendor_code: str, values: list, creds: Credentials):
+def validate_file(file_obj: File, vendor: str) -> dict:
     """
-    A function to write data to a google sheet for a specific vendor. The function
-    uses the google sheets API to write data to the sheet. The function takes the
-    vendor code, the values to write to the sheet, and the credentials for the google
-    sheet API.
+    Validate a file of MARC records and output to google sheet.
 
     Args:
-
-        vendor_code: the vendor code for the vendor to write data for.
-        values: a list of values to write to the google sheet.
-        creds: the credentials for the google sheets API as a `Credentials` object.
+        file_obj: `File` object representing the file to validate.
+        vendor: name of vendor to validate file for.
+        write: whether to write the validation results to the google sheet.
 
     Returns:
-        the response from the google sheets API as a dictionary.
-    """
-    body = {
-        "majorDimension": "ROWS",
-        "range": f"{vendor_code.upper()}!A1:O10000",
-        "values": values,
-    }
-    try:
-        service = build("sheets", "v4", credentials=creds)
+        None
 
-        result = (
-            service.spreadsheets()
-            .values()
-            .append(
-                spreadsheetId="1ZYuhMIE1WiduV98Pdzzw7RwZ08O-sJo7HJihWVgSOhQ",
-                range=f"{vendor_code.upper()}!A1:O10000",
-                valueInputOption="USER_ENTERED",
-                insertDataOption="INSERT_ROWS",
-                body=body,
-                includeValuesInResponse=True,
-            )
-            .execute()
+    """
+    if "AMALIVRE" in vendor.upper():
+        vendor_code = "AUXAM"
+    elif "EASTVIEW" in vendor.upper():
+        vendor_code = "EVP"
+    elif "LEILA" in vendor.upper():
+        vendor_code = "LEILA"
+    else:
+        vendor_code = vendor.upper()
+    record_count = len([record for record in read_marc_file_stream(file_obj)])
+    reader = read_marc_file_stream(file_obj)
+    record_n = 1
+    out_dict = defaultdict(list)
+    for record in reader:
+        validation_data = validate_single_record(record)
+        validation_data.update(
+            {
+                "record_number": f"{record_n} of {record_count}",
+                "control_number": get_control_number(record),
+                "file_name": file_obj.file_name,
+                "vendor_code": vendor_code,
+                "validation_date": datetime.today().strftime("%Y-%m-%d %I:%M:%S"),
+            }
         )
-        return result
-    except (HttpError, TimeoutError) as e:
-        logger.error(f"Error occurred while sending data to google sheet: {e}")
-        return None
+        for k, v in validation_data.items():
+            out_dict[k].append(str(v))
+        record_n += 1
+    return out_dict
 
 
 def validate_single_record(record: Record) -> dict[str, Any]:
@@ -148,19 +167,10 @@ def validate_single_record(record: Record) -> dict[str, Any]:
     Returns:
         dictionary with validation output.
     """
+    out: dict[str, Any]
     try:
         RecordModel(leader=str(record.leader), fields=record.fields)
-        out = {
-            "valid": True,
-            "error_count": "",
-            "missing_field_count": "",
-            "missing_fields": "",
-            "extra_field_count": "",
-            "extra_fields": "",
-            "invalid_field_count": "",
-            "invalid_fields": "",
-            "order_item_mismatches": "",
-        }
+        out = {"valid": True}
     except ValidationError as e:
         out = {"valid": False}
         marc_errors = MarcValidationError(e.errors())
@@ -173,66 +183,3 @@ def validate_single_record(record: Record) -> dict[str, Any]:
             }
         )
     return out
-
-
-def validate_file(file_obj: File, vendor: str, write: bool) -> None:
-    """
-    Validate a file of MARC records and output to google sheet.
-
-    Args:
-        file_obj: `File` object representing the file to validate.
-        vendor: name of vendor to validate file for.
-        write: whether to write the validation results to the google sheet.
-
-    Returns:
-        None
-
-    """
-    if vendor.upper() in ["EASTVIEW", "LEILA", "AMALIVRE_SASB"]:
-        vendor_code = map_vendor_to_code(vendor)
-        record_count = len([record for record in read_marc_file_stream(file_obj)])
-        reader = read_marc_file_stream(file_obj)
-        record_n = 1
-        out_dict = defaultdict(list)
-        for record in reader:
-            validation_data = validate_single_record(record)
-            validation_data.update(
-                {
-                    "record_number": f"{record_n} of {record_count}",
-                    "control_number": get_control_number(record),
-                    "file_name": file_obj.file_name,
-                    "vendor_code": vendor_code,
-                    "validation_date": datetime.datetime.today().strftime(
-                        "%Y-%m-%d %I:%M:%S"
-                    ),
-                }
-            )
-            for k, v in validation_data.items():
-                out_dict[k].append(str(v))
-            record_n += 1
-        df = pd.DataFrame(
-            out_dict,
-            columns=[
-                "validation_date",
-                "file_name",
-                "vendor_code",
-                "record_number",
-                "control_number",
-                "valid",
-                "error_count",
-                "missing_field_count",
-                "missing_fields",
-                "extra_field_count",
-                "extra_fields",
-                "invalid_field_count",
-                "invalid_fields",
-                "order_item_mismatches",
-            ],
-        )
-        df.fillna("", inplace=True)
-        if write is True:
-            send_data_to_sheet(
-                vendor_code,
-                df.values.tolist(),
-                configure_sheet(),
-            )

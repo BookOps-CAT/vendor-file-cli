@@ -1,136 +1,124 @@
-from pymarc import Field, Subfield
+import datetime
 import pytest
 from vendor_file_cli.validator import (
-    configure_sheet,
-    get_control_number,
-    map_vendor_to_code,
-    send_data_to_sheet,
+    get_single_file,
+    get_vendor_file_list,
+    validate_file,
     validate_single_record,
 )
+from vendor_file_cli.utils import connect
 
 
-def test_configure_sheet_success(mock_sheet_config):
-    creds = configure_sheet()
-    assert creds.token == "foo"
-    assert creds.valid is True
-    assert creds.expired is False
-    assert creds.refresh_token is not None
-
-
-def test_configure_sheet_invalid(mock_sheet_config_creds_invalid):
-    creds = configure_sheet()
-    assert creds.token == "baz"
-    assert creds.valid is True
-    assert creds.expired is False
-    assert creds.refresh_token is not None
-
-
-def test_configure_sheet_generate_new_creds(mock_sheet_config_no_creds):
-    creds = configure_sheet()
-    assert creds.token == "foo"
-    assert creds.valid is True
-    assert creds.expired is False
-    assert creds.refresh_token is not None
-
-
-def test_get_control_number(stub_record):
-    control_no = get_control_number(stub_record)
-    assert control_no == "on1381158740"
-
-
-@pytest.mark.parametrize(
-    "field",
-    ["020", "035", "022", "024", "010"],
-)
-def test_get_control_number_other_tag(stub_record, field):
-    print(stub_record)
-    stub_record.remove_fields("001")
-    stub_record.add_ordered_field(
-        Field(
-            tag=field,
-            indicators=[" ", " "],
-            subfields=[
-                Subfield(code="a", value="foo"),
-            ],
-        )
+@pytest.mark.parametrize("vendor", ["midwest_nypl", "bakertaylor_bpl"])
+def test_get_single_file_no_validation(mock_Client, stub_file_info, vendor, caplog):
+    vendor_client = connect(vendor)
+    nsdrop_client = connect("nsdrop")
+    get_single_file(
+        vendor=vendor,
+        file=stub_file_info,
+        vendor_client=vendor_client,
+        nsdrop_client=nsdrop_client,
     )
-    control_no = get_control_number(stub_record)
-    assert control_no == "foo"
+    assert (
+        f"({vendor.upper()}) Connecting to ftp.{vendor}.com via FTP client"
+        in caplog.text
+    )
+    assert "(NSDROP) Connecting to ftp.nsdrop.com via SFTP client" in caplog.text
+    assert f"(NSDROP) Validating {vendor} file: foo.mrc" not in caplog.text
+    assert (
+        f"(NSDROP) Writing foo.mrc to `NSDROP/vendor_records/{vendor}`" in caplog.text
+    )
 
 
-def test_get_control_number_call_no(stub_record):
-    stub_record.remove_fields("001")
-    control_no = get_control_number(stub_record)
-    assert control_no == "ReCAP 23-100000"
+def test_get_single_file_with_validation(mock_Client, stub_file_info, caplog):
+    vendor_client = connect("eastview")
+    nsdrop_client = connect("nsdrop")
+    get_single_file(
+        vendor="eastview",
+        file=stub_file_info,
+        vendor_client=vendor_client,
+        nsdrop_client=nsdrop_client,
+    )
+    assert "(EASTVIEW) Connecting to ftp.eastview.com via SFTP client" in caplog.text
+    assert "(NSDROP) Connecting to ftp.nsdrop.com via SFTP client" in caplog.text
+    assert "(NSDROP) Validating eastview file: foo.mrc" in caplog.text
+    assert "(NSDROP) Writing foo.mrc to `NSDROP/vendor_records/eastview`" in caplog.text
 
 
-def test_get_control_number_none(stub_record):
-    stub_record.remove_fields("001", "852")
-    control_no = get_control_number(stub_record)
-    assert control_no == "None"
+def test_get_single_file_bakertaylor_bpl_root(mock_Client, stub_file_info, caplog):
+    vendor_client = connect("bakertaylor_bpl")
+    nsdrop_client = connect("nsdrop")
+    stub_file_info.file_name = "ADDfoo.mrc"
+    get_single_file(
+        vendor="bakertaylor_bpl",
+        file=stub_file_info,
+        vendor_client=vendor_client,
+        nsdrop_client=nsdrop_client,
+    )
+    assert (
+        "(BAKERTAYLOR_BPL) Connecting to ftp.bakertaylor_bpl.com via FTP client"
+        in caplog.text
+    )
+    assert "(NSDROP) Connecting to ftp.nsdrop.com via SFTP client" in caplog.text
+    assert (
+        "(NSDROP) Writing ADDfoo.mrc to `NSDROP/vendor_records/bakertaylor_bpl`"
+        in caplog.text
+    )
+
+
+@pytest.mark.parametrize("vendor", ["midwest_nypl", "bakertaylor_bpl"])
+def test_get_vendor_file_list(mock_Client, vendor, caplog):
+    with connect("nsdrop") as nsdrop_client:
+        with connect(vendor) as vendor_client:
+            get_vendor_file_list(
+                vendor=vendor,
+                timedelta=datetime.timedelta(days=1),
+                nsdrop_client=nsdrop_client,
+                vendor_client=vendor_client,
+            )
+    assert "(NSDROP) Connecting to ftp.nsdrop.com via SFTP client" in caplog.text
+    assert (
+        f"({vendor.upper()}) Connecting to ftp.{vendor}.com via FTP client"
+        in caplog.text
+    )
+    assert (
+        f"({vendor.upper()}) 0 file(s) on {vendor.upper()} server to copy to NSDROP"
+        in caplog.text
+    )
+    assert f"({vendor.upper()}) Client session closed" in caplog.text
+    assert "(NSDROP) Client session closed" in caplog.text
 
 
 @pytest.mark.parametrize(
-    "vendor, code",
+    "vendor, vendor_code",
     [
+        ("amalivre_sasb", "AUXAM"),
         ("eastview", "EVP"),
         ("leila", "LEILA"),
-        ("amalivre_sasb", "AUXAM"),
-        ("amalivre_lpa", "AUXAM"),
-        ("amalivre_schomburg", "AUXAM"),
-        ("amalivre_rl", "AUXAM"),
+        ("midwest_nypl", "MIDWEST_NYPL"),
     ],
 )
-def test_map_vendor_to_code(vendor, code):
-    assert map_vendor_to_code(vendor) == code
-
-
-def test_send_data_to_sheet(mock_sheet_config, mock_sheet_resource):
-    creds = configure_sheet()
-    data = send_data_to_sheet(vendor_code="EVP", values=[["foo", "bar"]], creds=creds)
-    assert sorted(list(data.keys())) == sorted(
+def test_validate_file(stub_file, vendor, vendor_code):
+    out_dict = validate_file(stub_file, vendor)
+    assert sorted([i for i in out_dict.keys()]) == sorted(
         [
-            "spreadsheetId",
-            "tableRange",
+            "valid",
+            "record_number",
+            "control_number",
+            "file_name",
+            "validation_date",
+            "vendor_code",
         ]
     )
+    assert out_dict["vendor_code"] == [vendor_code]
 
 
-def test_send_data_to_sheet_http_error(
-    caplog, mock_sheet_config, mock_sheet_http_error
-):
-    creds = configure_sheet()
-    data = send_data_to_sheet(vendor_code="EVP", values=[["foo", "bar"]], creds=creds)
-    assert data is None
-    assert "Error occurred while sending data to google sheet: " in caplog.text
+def test_validate_single_record(mock_valid_record):
+    assert validate_single_record(mock_valid_record) == {"valid": True}
 
 
-def test_send_data_to_sheet_timeout_error(
-    caplog, mock_sheet_config, mock_sheet_timeout_error
-):
-    creds = configure_sheet()
-    data = send_data_to_sheet(vendor_code="EVP", values=[["foo", "bar"]], creds=creds)
-    assert data is None
-    assert "Error occurred while sending data to google sheet: " in caplog.text
-
-
-def test_validate_single_record(stub_record):
-    assert validate_single_record(stub_record) == {
-        "valid": True,
-        "error_count": "",
-        "missing_field_count": "",
-        "missing_fields": "",
-        "extra_field_count": "",
-        "extra_fields": "",
-        "invalid_field_count": "",
-        "invalid_fields": "",
-        "order_item_mismatches": "",
-    }
-
-
-def test_validate_single_record_invalid(stub_record):
-    stub_record.remove_fields("960")
-    assert validate_single_record(stub_record) == {
+def test_validate_single_record_invalid(mock_invalid_record):
+    assert validate_single_record(mock_invalid_record) == {
         "valid": False,
         "error_count": 1,
         "missing_field_count": 1,

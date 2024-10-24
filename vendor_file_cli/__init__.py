@@ -1,16 +1,18 @@
-import logging
-import logging.config
 import os
 import click
 from vendor_file_cli.commands import get_vendor_files, validate_files
-from vendor_file_cli.config import load_vendor_creds, logger_config
+from vendor_file_cli.utils import (
+    load_vendor_creds,
+    configure_logger,
+    create_logger_dict,
+)
 
 
 @click.group
 def vendor_file_cli() -> None:
     """CLI for retrieving files from vendor FTP/SFTP servers."""
-    logger = logging.getLogger("vendor_file_cli")
-    logger_config(logger)
+    logger_dict = create_logger_dict()
+    configure_logger(logger_dict)
     pass
 
 
@@ -78,10 +80,9 @@ def validate_vendor_files(vendor: str, file: str) -> None:
     Returns:
         None
     """
-    if not os.getenv("GITHUB_ACTIONS"):
-        load_vendor_creds(
-            os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
-        )
+    load_vendor_creds(
+        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
+    )
     validate_files(vendor=vendor, files=[file])
 
 

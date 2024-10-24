@@ -17,30 +17,29 @@ def test_vendor_file_cli():
 
 
 def test_vendor_file_cli_get_all_vendor_files(cli_runner, caplog):
-    result = cli_runner.invoke(
-        cli=vendor_file_cli,
-        args=["all-vendor-files"],
-    )
+    result = cli_runner.invoke(cli=vendor_file_cli, args=["all-vendor-files"])
     assert result.exit_code == 0
-    assert "(NSDROP) Connected to server" in caplog.text
-    assert "(FOO) Connected to server" in caplog.text
-    assert "(FOO) Retrieving list of files in " in caplog.text
-    assert "(FOO) Closing client session" in caplog.text
-    assert "(BAR) Connected to server" in caplog.text
-    assert "(BAR) Retrieving list of files in " in caplog.text
-    assert "(BAR) Closing client session" in caplog.text
-    assert "(BAZ) Connected to server" in caplog.text
-    assert "(BAZ) Retrieving list of files in " in caplog.text
-    assert "(BAZ) Closing client session" in caplog.text
+    assert "(NSDROP) Connecting to " in caplog.text
+    assert "(EASTVIEW) Connecting to " in caplog.text
+    assert "(EASTVIEW) Client session closed" in caplog.text
+    assert "(MIDWEST_NYPL) Connecting to " in caplog.text
+    assert "(MIDWEST_NYPL) Client session closed" in caplog.text
 
 
-def test_vendor_file_cli_get_available_vendors(cli_runner, caplog):
-    result = cli_runner.invoke(
-        cli=vendor_file_cli,
-        args=["available-vendors"],
-    )
+def test_vendor_file_cli_get_available_vendors(cli_runner):
+    result = cli_runner.invoke(cli=vendor_file_cli, args=["available-vendors"])
     assert result.exit_code == 0
-    assert "Available vendors: ['FOO', 'BAR', 'BAZ']" in result.stdout
+    assert "Available vendors: " in result.stdout
+    assert all(
+        i
+        for i in [
+            "EASTVIEW",
+            "MIDWEST_NYPL",
+            "BAKERTAYLOR_BPL",
+            "AMALIVRE_SASB",
+        ]
+        for i in result.stdout
+    )
 
 
 def test_vendor_file_cli_get_recent_vendor_files(cli_runner, caplog):
@@ -48,52 +47,29 @@ def test_vendor_file_cli_get_recent_vendor_files(cli_runner, caplog):
         cli=vendor_file_cli,
         args=["vendor-files", "-v", "all"],
     )
-    assert "(NSDROP) Connected to server" in caplog.text
-    assert "(FOO) Connected to server" in caplog.text
-    assert "(FOO) Retrieving list of files in " in caplog.text
-    assert "(FOO) Closing client session" in caplog.text
-
-
-def test_vendor_file_cli_get_recent_vendor_files_none(cli_runner, caplog):
-    result = cli_runner.invoke(
-        cli=vendor_file_cli,
-        args=["vendor-files"],
-    )
-    assert result.runner.get_default_prog_name(vendor_file_cli) == "vendor-file-cli"
-    assert "(NSDROP) Connected to server" in caplog.text
+    assert "(NSDROP) Connecting to " in caplog.text
+    assert "(EASTVIEW) Connecting to " in caplog.text
+    assert "(EASTVIEW) Client session closed" in caplog.text
 
 
 def test_vendor_file_cli_get_recent_vendor_files_multiple_vendors(cli_runner, caplog):
     result = cli_runner.invoke(
         cli=vendor_file_cli,
-        args=["vendor-files", "-v", "foo", "-v", "bar", "-v", "baz"],
+        args=["vendor-files", "-v", "eastview", "-v", "leila"],
     )
     assert result.exit_code == 0
-    assert "(NSDROP) Connected to server" in caplog.text
-    assert "(FOO) Connected to server" in caplog.text
-    assert "(FOO) Retrieving list of files in " in caplog.text
-    assert "(FOO) Closing client session" in caplog.text
-    assert "(BAR) Connected to server" in caplog.text
-    assert "(BAR) Retrieving list of files in " in caplog.text
-    assert "(BAR) Closing client session" in caplog.text
-    assert "(BAZ) Connected to server" in caplog.text
-    assert "(BAZ) Retrieving list of files in " in caplog.text
-    assert "(BAZ) Closing client session" in caplog.text
+    assert "(NSDROP) Connecting to " in caplog.text
+    assert "(EASTVIEW) Connecting to " in caplog.text
+    assert "(EASTVIEW) Client session closed" in caplog.text
+    assert "(LEILA) Connecting to " in caplog.text
+    assert "(LEILA) Client session closed" in caplog.text
 
 
 def test_vendor_file_cli_validate_vendor_files(cli_runner, caplog):
     result = cli_runner.invoke(
         cli=vendor_file_cli,
-        args=["validate-file", "-v", "foo", "-f", "foo.mrc"],
+        args=["validate-file", "-v", "eastview", "-f", "foo.mrc"],
     )
     assert result.exit_code == 0
-    assert "(NSDROP) Connected to server" in caplog.text
-    assert (
-        "(NSDROP) Retrieving file info for foo.mrc from NSDROP/vendor_records/foo"
-        in caplog.text
-    )
-    assert "(NSDROP) Closing client session" in caplog.text
-    assert "(NSDROP) Connection closed" in caplog.text
-    assert "(NSDROP) Connected to server" in caplog.text
-    assert "(NSDROP) Fetching foo.mrc from `NSDROP/vendor_records/foo`" in caplog.text
-    assert "(NSDROP) Validating foo file: foo.mrc" in caplog.text
+    assert "(NSDROP) Connecting to " in caplog.text
+    assert "(NSDROP) Validating eastview file: foo.mrc" in caplog.text

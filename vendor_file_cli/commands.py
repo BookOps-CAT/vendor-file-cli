@@ -4,33 +4,15 @@ import logging
 import logging.handlers
 import datetime
 import os
-from file_retriever.connect import Client
-from file_retriever.file import FileInfo
-from vendor_file_cli.validator import validate_file
+from vendor_file_cli.validator import (
+    validate_file,
+    get_single_file,
+    get_vendor_file_list,
+)
+from vendor_file_cli.utils import connect
 
 
-logger = logging.getLogger("vendor_file_cli")
-
-
-def connect(name: str) -> Client:
-    """
-    Create and return a `Client` object for the specified server
-    using credentials stored in env vars.
-
-    Args:
-        name: name of server (eg. EASTVIEW, NSDROP)
-
-    Returns:
-        a `Client` object for the specified server
-    """
-    client_name = name.upper()
-    return Client(
-        name=client_name,
-        username=os.environ[f"{client_name}_USER"],
-        password=os.environ[f"{client_name}_PASSWORD"],
-        host=os.environ[f"{client_name}_HOST"],
-        port=os.environ[f"{client_name}_PORT"],
-    )
+logger = logging.getLogger(__name__)
 
 
 def get_vendor_files(
@@ -56,58 +38,27 @@ def get_vendor_files(
         None
 
     """
-    nsdrop = connect("nsdrop")
-    timedelta = datetime.timedelta(days=days, hours=hours)
     for vendor in vendors:
-        with connect(vendor) as client:
-            file_list = client.list_file_info(
-                time_delta=timedelta,
-                remote_dir=os.environ[f"{vendor.upper()}_SRC"],
-            )
-            files = nsdrop.check_file_list(
-                files=file_list, dir=os.environ[f"{vendor.upper()}_DST"], remote=True
-            )
-            for file in files:
-                get_single_file(
+        with connect("nsdrop") as nsdrop_client:
+            with connect(vendor) as vendor_client:
+                files = get_vendor_file_list(
                     vendor=vendor,
-                    file=file,
-                    vendor_client=client,
-                    nsdrop_client=nsdrop,
+                    timedelta=datetime.timedelta(days=days, hours=hours),
+                    nsdrop_client=nsdrop_client,
+                    vendor_client=vendor_client,
                 )
-    nsdrop.close()
-
-
-def get_single_file(
-    vendor: str, file: FileInfo, vendor_client: Client, nsdrop_client: Client
-) -> None:
-    """
-    Get a file from a vendor server and put it in the NSDROP directory.
-    Validates the file if the vendor is EASTVIEW, LEILA, or AMALIVRE_SASB.
-
-    Args:
-        vendor: name of vendor
-        file: `FileInfo` object representing the file to retrieve
-        vendor_client: `Client` object for the vendor server
-        nsdrop_client: `Client` object for the NSDROP server
-
-    Returns:
-        None
-
-    """
-    fetched_file = vendor_client.get_file(
-        file=file, remote_dir=os.environ[f"{vendor.upper()}_SRC"]
-    )
-    if vendor.upper() in ["EASTVIEW", "LEILA", "AMALIVRE_SASB"]:
-        logger.info(
-            f"({nsdrop_client.name}) Validating {vendor} file: {fetched_file.file_name}"
-        )
-        validate_file(file_obj=fetched_file, vendor=vendor, write=True)
-    nsdrop_client.put_file(
-        file=fetched_file,
-        dir=os.environ[f"{vendor.upper()}_DST"],
-        remote=True,
-        check=True,
-    )
+                for file in files:
+                    get_single_file(
+                        vendor=vendor,
+                        file=file,
+                        vendor_client=vendor_client,
+                        nsdrop_client=nsdrop_client,
+                    )
+                if len(files) > 0:
+                    logger.info(
+                        f"({nsdrop_client.name}) {len(files)} file(s) "
+                        f"copied to `{os.environ[f"{vendor.upper()}_DST"]}`"
+                    )
 
 
 def validate_files(vendor: str, files: list | None) -> None:
@@ -137,6 +88,6 @@ def validate_files(vendor: str, files: list | None) -> None:
     for file in vendor_file_list:
         client = connect("nsdrop")
         file_obj = client.get_file(file=file, remote_dir=file_dir)
-        logger.info(f"({client.name}) Validating {vendor} file: {file_obj.file_name}")
-        validate_file(file_obj=file_obj, vendor=vendor, write=True)
+        logger.debug(f"({client.name}) Validating {vendor} file: {file_obj.file_name}")
+        validate_file(file_obj=file_obj, vendor=vendor)
         client.close()
