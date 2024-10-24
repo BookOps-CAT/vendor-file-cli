@@ -1,3 +1,4 @@
+import logging
 import os
 import click
 from vendor_file_cli.commands import get_vendor_files, validate_files
@@ -6,6 +7,8 @@ from vendor_file_cli.utils import (
     configure_logger,
     create_logger_dict,
 )
+
+logger = logging.getLogger("vendor_file_cli")
 
 
 @click.group

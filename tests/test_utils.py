@@ -104,7 +104,7 @@ def test_create_logger_dict():
         ["stream", "file", "loggly"]
     )
     assert sorted(list(logger_dict["loggers"].keys())) == sorted(
-        ["file_retriever", "file_retriever.vendor_file_cli"]
+        ["file_retriever", "vendor_file_cli"]
     )
 
 

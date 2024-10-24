@@ -18,9 +18,6 @@ logger = logging.getLogger(__name__)
 
 def configure_logger(logger_dict: dict) -> None:
     logging.config.dictConfig(logger_dict)
-    loggers = [i for i in logger_dict["loggers"].keys()]
-    for logger in loggers:
-        logging.getLogger(f"{logger}")
 
 
 def configure_sheet() -> Credentials:
@@ -79,11 +76,11 @@ def create_logger_dict() -> dict:
         "disable_existing_loggers": False,
         "formatters": {
             "basic": {
-                "format": "%(app_name)s-%(asctime)s-%(name)s-%(lineno)d-%(levelname)s-%(message)s",  # noqa: E501
-                "defaults": {"app_name": "vendor_file_cli"},
+                "format": "%(app)s-%(asctime)s-%(name)s-%(lineno)d-%(levelname)s-%(message)s",  # noqa: E501
+                "defaults": {"app": "vendor_file_cli"},
             },
             "json": {
-                "format": '{"app_name": "%(app_name)s", "asctime": "%(asctime)s", "name": "%(name)s", "lineno":"%(lineno)d", "levelname": "%(levelname)s", "message": "%(message)s"}'  # noqa: E501
+                "format": '{"app": "%(app)s", "asctime": "%(asctime)s", "name": "%(name)s", "lineno":"%(lineno)d", "levelname": "%(levelname)s", "message": "%(message)s"}'  # noqa: E501
             },
         },
         "handlers": {
@@ -111,9 +108,9 @@ def create_logger_dict() -> dict:
             "file_retriever": {
                 "handlers": ["stream", "file", "loggly"],
                 "level": "DEBUG",
-                "propagate": True,
+                "propagate": False,
             },
-            "file_retriever.vendor_file_cli": {
+            "vendor_file_cli": {
                 "handlers": ["stream", "file", "loggly"],
                 "level": "DEBUG",
                 "propagate": False,
