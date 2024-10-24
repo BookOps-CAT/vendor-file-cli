@@ -236,7 +236,7 @@ def mock_cred_config(monkeypatch, mock_open_yaml_file):
         return ["FOO", "BAR", "BAZ", "NSDROP"]
 
     monkeypatch.setattr(
-        "vendor_file_cli.config.load_vendor_creds", mock_load_vendor_creds
+        "vendor_file_cli.utils.load_vendor_creds", mock_load_vendor_creds
     )
 
 
