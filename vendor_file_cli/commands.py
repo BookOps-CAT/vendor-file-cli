@@ -39,6 +39,7 @@ def get_vendor_files(
 
     """
     for vendor in vendors:
+        vendor_dst = os.environ[f"{vendor.upper()}_DST"]
         with connect("nsdrop") as nsdrop_client:
             with connect(vendor) as vendor_client:
                 files = get_vendor_file_list(
@@ -57,7 +58,7 @@ def get_vendor_files(
                 if len(files) > 0:
                     logger.info(
                         f"({nsdrop_client.name}) {len(files)} file(s) "
-                        f"copied to `{os.environ[f"{vendor.upper()}_DST"]}`"
+                        f"copied to `{vendor_dst}`"
                     )
 
 
