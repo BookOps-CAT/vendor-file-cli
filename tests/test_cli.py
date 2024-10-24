@@ -29,16 +29,9 @@ def test_vendor_file_cli_get_all_vendor_files(cli_runner, caplog):
 def test_vendor_file_cli_get_available_vendors(cli_runner):
     result = cli_runner.invoke(cli=vendor_file_cli, args=["available-vendors"])
     assert result.exit_code == 0
-    assert "Available vendors: " in result.stdout
-    assert all(
-        i
-        for i in [
-            "EASTVIEW",
-            "MIDWEST_NYPL",
-            "BAKERTAYLOR_BPL",
-            "AMALIVRE_SASB",
-        ]
-        for i in result.stdout
+    assert (
+        "Available vendors: ['EASTVIEW', 'LEILA', 'MIDWEST_NYPL', 'BAKERTAYLOR_BPL']"
+        in result.stdout
     )
 
 
