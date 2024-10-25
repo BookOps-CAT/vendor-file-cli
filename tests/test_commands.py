@@ -65,7 +65,7 @@ def test_get_single_file_with_validation(mock_Client, stub_file_info, caplog):
 def test_validate_files(mock_Client, caplog):
     validate_files(vendor="eastview", files=None)
     assert "(NSDROP) Connecting to " in caplog.text
-    assert "(NSDROP) Validating eastview file: foo.mrc" in caplog.text
+    assert "(NSDROP) Validating eastview file: bar.mrc" in caplog.text
 
 
 def test_validate_files_with_list(mock_Client, caplog):

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+import datetime
 import logging
 import os
 from typing import Any, List, Union
@@ -22,7 +22,7 @@ def get_single_file(
     vendor: str, file: FileInfo, vendor_client: Client, nsdrop_client: Client
 ) -> File:
     """
-    Get a file from a vendor server and put it in the NSDROP directory.
+    Get a file from a vendor server and copy it to the vendor's NSDROP directory.
     Validates the file if the vendor is EASTVIEW, LEILA, or AMALIVRE_SASB.
 
     Args:
@@ -41,47 +41,71 @@ def get_single_file(
         remote_dir = ""
     else:
         remote_dir = os.environ[f"{vendor.upper()}_SRC"]
+    nsdrop_dir = os.environ[f"{vendor.upper()}_DST"]
     fetched_file = vendor_client.get_file(file=file, remote_dir=remote_dir)
     if vendor.upper() in ["EASTVIEW", "LEILA", "AMALIVRE_SASB"]:
         logger.debug(
             f"({nsdrop_client.name}) Validating {vendor} file: {fetched_file.file_name}"
         )
-        out_data = validate_file(file_obj=fetched_file, vendor=vendor)
-        write_data_to_sheet(out_data)
-    nsdrop_client.put_file(
-        file=fetched_file,
-        dir=os.environ[f"{vendor.upper()}_DST"],
-        remote=True,
-        check=True,
-    )
+        output = validate_file(file_obj=fetched_file, vendor=vendor)
+        write_data_to_sheet(output)
+    nsdrop_client.put_file(file=fetched_file, dir=nsdrop_dir, remote=True, check=True)
     return fetched_file
 
 
 def get_vendor_file_list(
-    vendor: str, timedelta: timedelta, nsdrop_client: Client, vendor_client: Client
+    vendor: str,
+    timedelta: datetime.timedelta,
+    nsdrop_client: Client,
+    vendor_client: Client,
 ) -> list[FileInfo]:
-    """"""
+    """
+    Create list of files to retrieve from vendor server. Compares list of files
+    on vendor server to list of files in vendor's directory on NSDROP. Only
+    includes files that are not already present in the NSDROP directory. The
+    list of files is filtered based on the timedelta provided.
+
+    If the vendor is BAKERTAYLOR_NYPL, the root directory of the is also checked
+    for files that are not in the NSDROP directory. This is because the
+    BAKERTAYLOR_NYPL server has multiple directories that contain files that
+    need to be copied to NSDROP.
+
+    If the vendor is MIDWEST_NYPL, the directories are compared using just
+    the file names and then a list of FileInfo objects is created from the
+    list of file names. This is due to the fact that there are nearly 10k files
+    on the MIDWEST_NYPL server.
+
+    Args:
+
+        vendor: name of vendor
+        timedelta: timedelta object representing the time period to retrieve files from
+        nsdrop_client: `Client` object for the NSDROP server
+        vendor_client: `Client` object for the vendor server
+
+    Returns:
+        list of `FileInfo` objects representing files to retrieve from the vendor server
+    """
     nsdrop_files: Union[List[FileInfo], List[str]]
     vendor_files: Union[List[FileInfo], List[str]]
 
-    today = datetime.now(tz=timezone.utc)
+    today = datetime.datetime.now(tz=datetime.timezone.utc)
     src_dir = os.environ[f"{vendor.upper()}_SRC"]
     dst_dir = os.environ[f"{vendor.upper()}_DST"]
     if vendor.lower() == "midwest_nypl":
         nsdrop_files = nsdrop_client.list_files(remote_dir=dst_dir)
         vendor_files = vendor_client.list_files(remote_dir=src_dir)
+
         files_to_check = [
             i
             for i in vendor_files
-            if ".mrc" in i
-            and i.split("_ALL")[0].endswith("2024")
-            and int(i.split("_")[1][3:5]) >= 7
+            if i.endswith(".mrc")
+            and "ALL" in i
+            and int(i.split("_ALL")[0][-4:]) >= 2024
+            and int(i.split("_ALL")[0][-8:-6]) >= 7
             and i not in nsdrop_files
         ]
         file_data = [
-            vendor_client.get_file_info(
-                file_name=i, remote_dir=os.environ["MIDWEST_NYPL_SRC"]
-            )
+            vendor_client.get_file_info(file_name=i, remote_dir=src_dir)
             for i in files_to_check
         ]
     else:
@@ -104,12 +128,9 @@ def get_vendor_file_list(
     files_to_get = [
         i
         for i in file_data
-        if datetime.fromtimestamp(i.file_mtime, tz=timezone.utc) >= today - timedelta
+        if datetime.datetime.fromtimestamp(i.file_mtime, tz=datetime.timezone.utc)
+        >= today - timedelta
     ]
-    logger.debug(
-        f"({vendor_client.name}) {len(files_to_get)} file(s) on "
-        f"{vendor_client.name} server to copy to NSDROP"
-    )
     return files_to_get
 
 
@@ -123,7 +144,7 @@ def validate_file(file_obj: File, vendor: str) -> dict:
         write: whether to write the validation results to the google sheet.
 
     Returns:
-        None
+        dictionary containing validation output for the file.
 
     """
     if "AMALIVRE" in vendor.upper():
@@ -134,7 +155,7 @@ def validate_file(file_obj: File, vendor: str) -> dict:
         vendor_code = "LEILA"
     else:
         vendor_code = vendor.upper()
-    record_count = len([record for record in read_marc_file_stream(file_obj)])
+    record_count = len([i for i in read_marc_file_stream(file_obj)])
     reader = read_marc_file_stream(file_obj)
     record_n = 1
     out_dict = defaultdict(list)
@@ -146,7 +167,9 @@ def validate_file(file_obj: File, vendor: str) -> dict:
                 "control_number": get_control_number(record),
                 "file_name": file_obj.file_name,
                 "vendor_code": vendor_code,
-                "validation_date": datetime.today().strftime("%Y-%m-%d %I:%M:%S"),
+                "validation_date": datetime.datetime.today().strftime(
+                    "%Y-%m-%d %I:%M:%S"
+                ),
             }
         )
         for k, v in validation_data.items():

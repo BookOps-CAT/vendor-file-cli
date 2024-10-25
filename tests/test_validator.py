@@ -68,21 +68,21 @@ def test_get_single_file_bakertaylor_bpl_root(mock_Client, stub_file_info, caplo
 
 @pytest.mark.parametrize("vendor", ["midwest_nypl", "bakertaylor_bpl"])
 def test_get_vendor_file_list(mock_Client, vendor, caplog):
+    file_list = []
     with connect("nsdrop") as nsdrop_client:
         with connect(vendor) as vendor_client:
-            get_vendor_file_list(
-                vendor=vendor,
-                timedelta=datetime.timedelta(days=1),
-                nsdrop_client=nsdrop_client,
-                vendor_client=vendor_client,
+            file_list.extend(
+                get_vendor_file_list(
+                    vendor=vendor,
+                    timedelta=datetime.timedelta(days=1),
+                    nsdrop_client=nsdrop_client,
+                    vendor_client=vendor_client,
+                )
             )
+    assert len(file_list) == 0
     assert "(NSDROP) Connecting to ftp.nsdrop.com via SFTP client" in caplog.text
     assert (
         f"({vendor.upper()}) Connecting to ftp.{vendor}.com via FTP client"
-        in caplog.text
-    )
-    assert (
-        f"({vendor.upper()}) 0 file(s) on {vendor.upper()} server to copy to NSDROP"
         in caplog.text
     )
     assert f"({vendor.upper()}) Client session closed" in caplog.text

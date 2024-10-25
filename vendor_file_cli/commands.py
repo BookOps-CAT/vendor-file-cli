@@ -1,4 +1,4 @@
-"""This module contains functions to use to configure the CLI, logger, and env vars."""
+"""This module contains functions in CLI commands."""
 
 import logging
 import logging.handlers
@@ -48,6 +48,10 @@ def get_vendor_files(
                     nsdrop_client=nsdrop_client,
                     vendor_client=vendor_client,
                 )
+                logger.info(
+                    f"({vendor_client.name}) {len(files)} file(s) on "
+                    f"{vendor_client.name} server to copy to NSDROP"
+                )
                 for file in files:
                     get_single_file(
                         vendor=vendor,
@@ -64,7 +68,7 @@ def get_vendor_files(
 
 def validate_files(vendor: str, files: list | None) -> None:
     """
-    Validate files on NSDROP for a speific vendor.
+    Validate files on NSDROP for a specific vendor.
 
     Args:
         vendor:

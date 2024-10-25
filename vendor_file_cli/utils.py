@@ -1,8 +1,7 @@
 import logging
-import logging.config
 import os
 import yaml
-from typing import Generator
+from typing import Generator, Union
 from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 from google.auth.transport.requests import Request
@@ -14,10 +13,6 @@ from file_retriever.connect import Client
 from file_retriever.file import File
 
 logger = logging.getLogger(__name__)
-
-
-def configure_logger(logger_dict: dict) -> None:
-    logging.config.dictConfig(logger_dict)
 
 
 def configure_sheet() -> Credentials:
@@ -50,8 +45,8 @@ def configure_sheet() -> Credentials:
 
 def connect(name: str) -> Client:
     """
-    Create and return a `Client` object for the specified server
-    using credentials stored in env vars.
+    Create and return a `Client` object for the specified server using
+    credentials stored in env vars.
 
     Args:
         name: name of server (eg. EASTVIEW, NSDROP)
@@ -70,17 +65,19 @@ def connect(name: str) -> Client:
 
 
 def create_logger_dict() -> dict:
-    loggly_token = os.environ.get("LOGGLY_TOKEN")
+    """Create a dictionary to configure logger."""
+    load_creds(os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml"))
+    loggly_token = os.environ["LOGGLY_TOKEN"]
     return {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
             "basic": {
-                "format": "%(app)s-%(asctime)s-%(name)s-%(lineno)d-%(levelname)s-%(message)s",  # noqa: E501
+                "format": "%(app)s-%(asctime)s-%(filename)s-%(lineno)d-%(levelname)s-%(message)s",  # noqa: E501
                 "defaults": {"app": "vendor_file_cli"},
             },
             "json": {
-                "format": '{"app": "%(app)s", "asctime": "%(asctime)s", "name": "%(name)s", "lineno":"%(lineno)d", "levelname": "%(levelname)s", "message": "%(message)s"}'  # noqa: E501
+                "format": '{"app": "vendor_file_cli", "ascitime": "%(asctime)s", "fileName": "%(name)s", "lineno":"%(lineno)d", "levelname": "%(levelname)s", "message": "%(message)s"}',  # noqa: E501
             },
         },
         "handlers": {
@@ -120,7 +117,7 @@ def create_logger_dict() -> dict:
 
 
 def get_control_number(record: Record) -> str:
-    """Get control number from MARC record to output to google sheet."""
+    """Get control number from MARC record to add to validation output."""
     field = record.get("001", None)
     if field is not None:
         control_number = field.data
@@ -144,45 +141,55 @@ def get_control_number(record: Record) -> str:
     return "None"
 
 
-def load_vendor_creds(config_path: str) -> list[str]:
+def load_creds(config_path: str) -> None:
     """
-    Read config file with credentials and set creds as environment variables.
-    Returns a list of vendors whose FTP/SFTP credentials are stored in the
-    config file and have been added to env vars. NSDROP is excluded from this list.
+    Read yaml file with credentials and set as environment variables.
 
     Args:
-        config_path (str): Path to the yaml file with credendtials.
+        config_path: Path to .yaml file with credentials.
 
-    Returns:
-        list of names of servers (eg. EASTVIEW, LEILA) whose credentials are
-        stored in the config file and have been added to env vars
     """
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
         if config is None:
             raise ValueError("No credentials found in config file.")
-        vendor_list = [
-            i.split("_HOST")[0]
-            for i in config.keys()
-            if i.endswith("_HOST") and "NSDROP" not in i
-        ]
         for k, v in config.items():
-            os.environ[str(k)] = str(v)
+            os.environ[k] = str(v)
+        vendor_list = get_vendor_list()
         for vendor in vendor_list:
             os.environ[f"{vendor}_DST"] = f"NSDROP/vendor_records/{vendor.lower()}"
-        return vendor_list
+
+
+def get_vendor_list() -> list[str]:
+    """
+    Read environment variables and return a list of vendors whose
+    credentials have been loaded.
+
+    Returns:
+        list of vendors (eg. EASTVIEW, LEILA) whose credentials have been loaded.
+    """
+    hosts = [i for i in os.environ.keys() if i.endswith("_HOST")]
+    return [i.split("_HOST")[0] for i in hosts if "NSDROP" not in i]
 
 
 def read_marc_file_stream(file_obj: File) -> Generator[Record, None, None]:
-    """Read the filestream within a File object using pymarc"""
+    """Read the records contained within filestream of File object using pymarc"""
     fh = file_obj.file_stream.getvalue()
     reader = MARCReader(fh)
     for record in reader:
         yield record
 
 
-def write_data_to_sheet(values: dict) -> dict | None:
-    """"""
+def write_data_to_sheet(values: dict) -> Union[dict, None]:
+    """
+    Write output of validation to google sheet.
+
+    Args:
+        values: dictionary containing validation output for a file.
+
+    Returns:
+        dictionary containing response from google sheet API.
+    """
     vendor_code = values["vendor_code"][0]
     creds = configure_sheet()
 

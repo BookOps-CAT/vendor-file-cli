@@ -1,64 +1,17 @@
-import logging
-import logging.config
-import logging.handlers
 import os
 from pymarc import Field, Subfield
 import pytest
 from file_retriever.connect import Client
 from vendor_file_cli.utils import (
-    configure_logger,
     configure_sheet,
     connect,
     create_logger_dict,
     get_control_number,
-    load_vendor_creds,
+    get_vendor_list,
+    load_creds,
     read_marc_file_stream,
     write_data_to_sheet,
 )
-
-
-def test_configure_logger():
-    logger_dict = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "formatters": {
-            "basic": {
-                "format": "%(app_name)s-%(asctime)s-%(name)s-%(lineno)d-%(levelname)s-%(message)s",  # noqa: E501
-                "defaults": {"app_name": "foo"},
-            },
-        },
-        "handlers": {
-            "stream_1": {
-                "class": "logging.StreamHandler",
-                "formatter": "basic",
-                "level": "DEBUG",
-            },
-            "stream_2": {
-                "class": "logging.StreamHandler",
-                "formatter": "basic",
-                "level": "INFO",
-            },
-        },
-        "loggers": {
-            "foo": {
-                "handlers": ["stream_1", "stream_2"],
-                "level": "DEBUG",
-                "propagate": False,
-            },
-            "foo.bar": {
-                "handlers": ["stream_1", "stream_2"],
-                "level": "DEBUG",
-                "propagate": False,
-            },
-        },
-    }
-    configure_logger(logger_dict)
-    logger = logging.getLogger("foo")
-    config_handlers = logger.handlers
-    handler_types = [type(i) for i in config_handlers]
-    assert len(handler_types) == 2
-    assert logging.StreamHandler in handler_types
-    assert sorted([i.level for i in config_handlers]) == sorted([10, 20])
 
 
 def test_configure_sheet_success(mock_sheet_config):
@@ -96,9 +49,6 @@ def test_connect(mock_Client):
 
 def test_create_logger_dict():
     logger_dict = create_logger_dict()
-    assert sorted(list(logger_dict.keys())) == sorted(
-        ["version", "disable_existing_loggers", "formatters", "handlers", "loggers"]
-    )
     assert sorted(list(logger_dict["formatters"].keys())) == sorted(["basic", "json"])
     assert sorted(list(logger_dict["handlers"].keys())) == sorted(
         ["stream", "file", "loggly"]
@@ -144,40 +94,29 @@ def test_get_control_number_none(stub_record):
     assert control_no == "None"
 
 
-def test_load_vendor_creds(mocker):
-    yaml_string = """
-        FOO_HOST: foo
-        FOO_USER: bar
-        FOO_PASSWORD: baz
-        FOO_PORT: '21'
-        FOO_SRC: foo_src
-        BAR_HOST: foo
-        BAR_USER: bar
-        BAR_PASSWORD: baz
-        BAR_PORT: '22'
-        BAR_SRC: bar_src
-    """
-    m = mocker.mock_open(read_data=yaml_string)
-    mocker.patch("builtins.open", m)
-
-    client_list = load_vendor_creds("foo.yaml")
-    assert len(client_list) == 2
-    assert client_list == ["FOO", "BAR"]
-    assert os.environ["FOO_HOST"] == "foo"
-    assert os.environ["FOO_USER"] == "bar"
-    assert os.environ["FOO_PASSWORD"] == "baz"
-    assert os.environ["FOO_PORT"] == "21"
-    assert os.environ["FOO_SRC"] == "foo_src"
-    assert os.environ["FOO_DST"] == "NSDROP/vendor_records/foo"
+def test_get_vendor_list():
+    vendor_list = get_vendor_list()
+    assert sorted(vendor_list) == sorted(
+        ["LEILA", "MIDWEST_NYPL", "BAKERTAYLOR_BPL", "EASTVIEW"]
+    )
 
 
-def test_load_vendor_creds_empty_yaml(mocker):
+def test_load_creds(mock_open_file):
+    load_creds(mock_open_file)
+    assert os.environ["NSDROP_HOST"] == "ftp.nsdrop.com"
+    assert os.environ["NSDROP_PORT"] == "22"
+    assert os.environ["LEILA_HOST"] == "ftp.leila.com"
+    assert os.environ["LEILA_PORT"] == "21"
+    assert os.environ["LEILA_SRC"] == "leila_src"
+    assert os.environ["LEILA_DST"] == "NSDROP/vendor_records/leila"
+
+
+def test_load_creds_empty_yaml(mocker):
     yaml_string = ""
     m = mocker.mock_open(read_data=yaml_string)
     mocker.patch("builtins.open", m)
-
     with pytest.raises(ValueError) as exc:
-        load_vendor_creds("foo.yaml")
+        load_creds("foo.yaml")
     assert "No credentials found in config file" in str(exc.value)
 
 
@@ -190,23 +129,15 @@ def test_read_marc_file_stream(stub_file):
 
 
 def test_write_data_to_sheet(mock_sheet_config):
-    data = write_data_to_sheet(
-        values={"file_name": ["foo.mrc"], "vendor_code": ["FOO"]}
-    )
-    assert sorted(list(data.keys())) == sorted(
-        [
-            "spreadsheetId",
-            "tableRange",
-        ]
-    )
+    data = write_data_to_sheet({"file_name": ["foo.mrc"], "vendor_code": ["FOO"]})
+    keys = data.keys()
+    assert sorted(list(keys)) == sorted(["spreadsheetId", "tableRange"])
 
 
 def test_write_data_to_sheet_http_error(
     mock_sheet_config, mock_sheet_http_error, caplog
 ):
-    data = write_data_to_sheet(
-        values={"file_name": ["foo.mrc"], "vendor_code": ["FOO"]}
-    )
+    data = write_data_to_sheet({"file_name": ["foo.mrc"], "vendor_code": ["FOO"]})
     assert data is None
     assert "Error occurred while sending data to google sheet: " in caplog.text
 
@@ -214,9 +145,7 @@ def test_write_data_to_sheet_http_error(
 def test_write_data_to_sheet_timeout_error(
     mock_sheet_config, mock_sheet_timeout_error, caplog
 ):
-    data = write_data_to_sheet(
-        values={"file_name": ["foo.mrc"], "vendor_code": ["FOO"]}
-    )
+    data = write_data_to_sheet({"file_name": ["foo.mrc"], "vendor_code": ["FOO"]})
     assert data is None
     assert (
         "Error occurred while sending data to google sheet: Connection timed out"
