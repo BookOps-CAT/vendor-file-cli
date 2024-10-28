@@ -47,7 +47,7 @@ def test_connect(mock_Client):
     assert client.session is not None
 
 
-def test_create_logger_dict():
+def test_create_logger_dict(cli_runner):
     logger_dict = create_logger_dict()
     assert sorted(list(logger_dict["formatters"].keys())) == sorted(["basic", "json"])
     assert sorted(list(logger_dict["handlers"].keys())) == sorted(
