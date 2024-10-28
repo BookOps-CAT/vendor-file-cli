@@ -445,7 +445,7 @@ types-pyyaml = "^6.0.12.20240311"
 type = "git"
 url = "https://github.com/BookOps-CAT/file-retriever.git"
 reference = "HEAD"
-resolved_reference = "8433d49ae3150901c97f8068c03f071b2b66d46a"
+resolved_reference = "405c6d20fb1a5017140b9aa3aeb57168d733d98a"
 
 [[package]]
 name = "google-api-core"
@@ -599,6 +599,20 @@ files = [
     {file = "iniconfig-2.0.0-py3-none-any.whl", hash = "sha256:b6a85871a79d2e3b22d2d1b94ac2824226a63c6b741c88f7ae975f18b6778374"},
     {file = "iniconfig-2.0.0.tar.gz", hash = "sha256:2d91e135bf72d31a410b17c16da610a82cb55f6b0477d1a902134b24a455b8b3"},
 ]
+
+[[package]]
+name = "loggly-python-handler"
+version = "1.0.1"
+description = "Python logging handler that sends messages to Loggly"
+optional = false
+python-versions = "*"
+files = [
+    {file = "loggly-python-handler-1.0.1.tar.gz", hash = "sha256:adce302d21fbc5b9647a01067243fb549e9992bfe5ab09807b8fad56c9411995"},
+    {file = "loggly_python_handler-1.0.1-py3-none-any.whl", hash = "sha256:0a4a826adb31ffeb76dac7ca116ccb032ed923254244160e70ddd2c3e88df4fd"},
+]
+
+[package.dependencies]
+requests-futures = ">=1.0.0"
 
 [[package]]
 name = "numpy"
@@ -1223,7 +1237,7 @@ pymarc = "^5.2.2"
 type = "git"
 url = "https://github.com/BookOps-CAT/record-validator.git"
 reference = "HEAD"
-resolved_reference = "2f0c7934915b44db01c7e21294e78ffb3632e9ff"
+resolved_reference = "c81f97bbbebef3779319ec3ec1fe9e7dec48ccf9"
 
 [[package]]
 name = "requests"
@@ -1245,6 +1259,23 @@ urllib3 = ">=1.21.1,<3"
 [package.extras]
 socks = ["PySocks (>=1.5.6,!=1.5.7)"]
 use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
+
+[[package]]
+name = "requests-futures"
+version = "1.0.1"
+description = "Asynchronous Python HTTP for Humans."
+optional = false
+python-versions = "*"
+files = [
+    {file = "requests-futures-1.0.1.tar.gz", hash = "sha256:f55a4ef80070e2858e7d1e73123d2bfaeaf25b93fd34384d8ddf148e2b676373"},
+    {file = "requests_futures-1.0.1-py2.py3-none-any.whl", hash = "sha256:4a2f5472e9911a79532137d156aa937cd9cd90fec55677f71b2976d1f7a66d38"},
+]
+
+[package.dependencies]
+requests = ">=1.2.0"
+
+[package.extras]
+dev = ["black (>=22.3.0)", "build (>=0.7.0)", "isort (>=5.11.4)", "pyflakes (>=2.2.0)", "pytest (>=6.2.5)", "pytest-cov (>=3.0.0)", "pytest-network (>=0.0.1)", "readme-renderer[rst] (>=26.0)", "twine (>=3.4.2)"]
 
 [[package]]
 name = "requests-oauthlib"
@@ -1389,4 +1420,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "ad66b2b25e03e28b5e553f646b2144bc72246c33accc5711d1a6ba1bdbb2b3ba"
+content-hash = "182a4a8cb683c50b33afcf8df2543cde7902d4dd8cb030a9fb7d989a7a15eef9"

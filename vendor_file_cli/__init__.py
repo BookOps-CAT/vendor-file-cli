@@ -1,16 +1,17 @@
 import logging
 import logging.config
-import os
 import click
 from vendor_file_cli.commands import get_vendor_files, validate_files
-from vendor_file_cli.config import load_vendor_creds, logger_config
+from vendor_file_cli.utils import create_logger_dict, get_vendor_list
+
+logger = logging.getLogger("vendor_file_cli")
 
 
 @click.group
 def vendor_file_cli() -> None:
-    """CLI for retrieving files from vendor FTP/SFTP servers."""
-    logger = logging.getLogger("vendor_file_cli")
-    logger_config(logger)
+    """CLI for retrieving and validating files from vendor FTP/SFTP servers."""
+    logger_dict = create_logger_dict()
+    logging.config.dictConfig(logger_dict)
     pass
 
 
@@ -20,12 +21,12 @@ def vendor_file_cli() -> None:
 )
 def get_all_vendor_files() -> None:
     """
-    Retrieve files from vendor server not present in vendor's NSDROP directory. Creates
-    list of files on vendor server and list of files in NSDROP directory. Copies files
-    from vendor server to NSDROP directory if they are not already present. Validates
-    files for Eastview, Leila, and Amalivre (SASB) before copying them to NSDROP and
-    writes output of validation to google sheet. Files are copied to
-    NSDROP/vendor_records/{vendor_name}.
+    Retrieve files from vendor server which were created in last year and are not
+    present in vendor's NSDROP directory. Creates list of files on vendor server
+    and list of files in NSDROP directory. Copies files from vendor server to NSDROP
+    directory if they are not already present. Validates files for Eastview, Leila,
+    and Amalivre (SASB) before copying them to NSDROP and writes output of validation
+    to google sheet. Files are copied to NSDROP/vendor_records/{vendor_name}.
 
     Args:
         None
@@ -34,18 +35,14 @@ def get_all_vendor_files() -> None:
         None
 
     """
-    vendor_list = load_vendor_creds(
-        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
-    )
-    get_vendor_files(vendors=vendor_list)
+    vendor_list = get_vendor_list()
+    get_vendor_files(vendors=vendor_list, days=365)
 
 
 @vendor_file_cli.command("available-vendors", short_help="List all configured vendors.")
 def get_available_vendors() -> None:
     """List all configured vendors."""
-    vendor_list = load_vendor_creds(
-        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
-    )
+    vendor_list = get_vendor_list()
     click.echo(f"Available vendors: {vendor_list}")
 
 
@@ -78,10 +75,6 @@ def validate_vendor_files(vendor: str, file: str) -> None:
     Returns:
         None
     """
-    if not os.getenv("GITHUB_ACTIONS"):
-        load_vendor_creds(
-            os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
-        )
     validate_files(vendor=vendor, files=[file])
 
 
@@ -132,9 +125,7 @@ def get_recent_vendor_files(vendor: str, days: int, hours: int) -> None:
         None
 
     """
-    all_available_vendors = load_vendor_creds(
-        os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml")
-    )
+    all_available_vendors = get_vendor_list()
     if "all" in vendor:
         vendor_list = all_available_vendors
     else:
