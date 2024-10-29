@@ -118,7 +118,7 @@ def mock_Client(monkeypatch, mock_sheet_config):
     )
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def mock_vendor_creds(monkeypatch) -> str:
     vendors = ["NSDROP", "EASTVIEW", "LEILA", "MIDWEST_NYPL", "BAKERTAYLOR_BPL"]
     env = {"LOGGLY_TOKEN": "foo"}
@@ -135,14 +135,24 @@ def mock_vendor_creds(monkeypatch) -> str:
     for k, v in env.items():
         os.environ[k] = v
         yaml_string += f"{k}: {v}\n"
-    monkeypatch.setattr("vendor_file_cli.utils.load_creds", lambda *args: None)
     return yaml_string
 
 
 @pytest.fixture
-def mock_open_file(mock_vendor_creds, mocker) -> None:
+def mock_open_file(mock_vendor_creds, mocker, monkeypatch) -> None:
     m = mocker.mock_open(read_data=mock_vendor_creds)
     mocker.patch("vendor_file_cli.utils.open", m)
+    monkeypatch.setattr("vendor_file_cli.utils.load_creds", lambda *args: None)
+
+
+@pytest.fixture
+def unset_env_var(monkeypatch, mock_vendor_creds) -> None:
+    keys = ["NSDROP", "EASTVIEW", "LEILA", "MIDWEST_NYPL", "BAKERTAYLOR_BPL", "LOGGLY"]
+    env_vars = os.environ.keys()
+    for var in env_vars:
+        if any(key in var for key in keys):
+            monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("USERPROFILE", "test")
 
 
 @pytest.fixture
