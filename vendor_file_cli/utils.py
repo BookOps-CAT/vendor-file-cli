@@ -1,7 +1,7 @@
 import logging
 import os
 import yaml
-from typing import Generator, Union
+from typing import Generator, Optional, Union
 from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
 from google.auth.transport.requests import Request
@@ -66,7 +66,8 @@ def connect(name: str) -> Client:
 
 def create_logger_dict() -> dict:
     """Create a dictionary to configure logger."""
-    load_creds(os.path.join(os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml"))
+    if any("NSDROP" in i for i in os.environ.keys()) is False:
+        load_creds()
     loggly_token = os.environ["LOGGLY_TOKEN"]
     return {
         "version": 1,
@@ -141,7 +142,7 @@ def get_control_number(record: Record) -> str:
     return "None"
 
 
-def load_creds(config_path: str) -> None:
+def load_creds(config_path: Optional[str] = None) -> None:
     """
     Read yaml file with credentials and set as environment variables.
 
@@ -149,6 +150,10 @@ def load_creds(config_path: str) -> None:
         config_path: Path to .yaml file with credentials.
 
     """
+    if config_path is None:
+        config_path = os.path.join(
+            os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml"
+        )
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
         if config is None:

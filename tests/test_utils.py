@@ -58,6 +58,16 @@ def test_create_logger_dict(cli_runner):
     )
 
 
+def test_create_logger_dict_no_env_vars(unset_env_var, mocker, mock_vendor_creds):
+    env_vars = os.environ.keys()
+    assert "NSDROP_HOST" not in env_vars
+    assert any("NSDROP" in i for i in os.environ.keys()) is False
+    m = mocker.mock_open(read_data=mock_vendor_creds)
+    mocker.patch("vendor_file_cli.utils.open", m)
+    create_logger_dict()
+    assert os.environ["NSDROP_HOST"] == "ftp.nsdrop.com"
+
+
 def test_get_control_number(stub_record):
     control_no = get_control_number(stub_record)
     assert control_no == "on1381158740"
