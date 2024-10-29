@@ -142,7 +142,7 @@ def mock_vendor_creds(monkeypatch) -> str:
 def mock_open_file(mock_vendor_creds, mocker, monkeypatch) -> None:
     m = mocker.mock_open(read_data=mock_vendor_creds)
     mocker.patch("vendor_file_cli.utils.open", m)
-    monkeypatch.setattr("vendor_file_cli.utils.load_creds", lambda *args: None)
+    monkeypatch.setenv("USERPROFILE", "test")
 
 
 @pytest.fixture
@@ -213,6 +213,7 @@ def mock_sheet_config(monkeypatch, caplog, mock_open_file):
         "google.oauth2.credentials.Credentials.from_authorized_user_file",
         lambda *args, **kwargs: MockCreds(),
     )
+    monkeypatch.setattr("vendor_file_cli.utils.load_creds", lambda *args: None)
 
 
 @pytest.fixture
