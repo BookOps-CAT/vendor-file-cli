@@ -21,10 +21,10 @@ CLI tool to retrieve files from vendor servers.
 
 ## Usage
 ```
-$ fetch all-available-records
+$ fetch all-vendor-files
 ```
 
-This project provides a command line interface to connect to and retrieve files from vendors using FTP/SFTP. Files are copied to the vendor's directory on BookOps' NSDROP SFTP server. 
+This project provides a command line interface to connect to and retrieve files from vendors using FTP/SFTP. Files are copied to the vendor's directory on BookOps' NSDROP SFTP server. Credentials are read from a local `yaml` file or environment variables. 
 
 This CLI can also validate MARC records using the models defined in [record-validator](https://github.com/BookOps-CAT/record-validator). Currently this tool is able to validate records for Eastview, Leila, and Amalivre (SASB). 
 
@@ -36,7 +36,7 @@ The following information is also available using `validator --help`
 ##### Retrieve all new files
 `$ fetch all-vendor-files`
 
-Reads credentials for all vendor servers from a `yaml` file. Retrieves all new files for all vendors with credentials in the `yaml` file. 
+Retrieves all new files for all vendors with configured credentials. 
  - Logs into each vendor's server, 
  - Creates a lists of files on the server and in the corresponding directory on NSDROP,
  - Copies all files from the vendor's server that are not in the NSDROP directory, 
@@ -47,7 +47,7 @@ Reads credentials for all vendor servers from a `yaml` file. Retrieves all new f
 ##### List all vendors configured to work with CLI
 `$ fetch available-vendors`
 
-Reads the local `yaml` config file and prints the list of vendors who are configured to work with the CLI.
+Prints a list of vendors with credentials configured to work with the CLI.
 
 ##### Validate vendor .mrc files
 `$ fetch validate-file`
