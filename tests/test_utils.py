@@ -101,8 +101,14 @@ def test_get_vendor_list():
     )
 
 
+def test_get_vendor_list_no_env_vars_set(unset_env_var):
+    with pytest.raises(ValueError) as exc:
+        get_vendor_list()
+    assert "No vendors found in environment variables." in str(exc.value)
+
+
 def test_load_creds(mock_open_file):
-    load_creds(mock_open_file)
+    load_creds()
     assert os.environ["NSDROP_HOST"] == "ftp.nsdrop.com"
     assert os.environ["NSDROP_PORT"] == "22"
     assert os.environ["LEILA_HOST"] == "ftp.leila.com"
@@ -115,9 +121,24 @@ def test_load_creds_empty_yaml(mocker):
     yaml_string = ""
     m = mocker.mock_open(read_data=yaml_string)
     mocker.patch("builtins.open", m)
+    mocker.patch("os.path.exists", lambda *args, **kwargs: True)
     with pytest.raises(ValueError) as exc:
         load_creds("foo.yaml")
     assert "No credentials found in config file" in str(exc.value)
+
+
+def test_load_creds_no_userprofile_env_var(mocker):
+    mocker.patch.dict(os.environ, {}, clear=True)
+    with pytest.raises(ValueError) as exc:
+        load_creds()
+    assert "Vendor credentials file not found." in str(exc.value)
+
+
+def test_load_creds_file_not_found(mocker):
+    mocker.patch.dict(os.environ, {"USERPROFILE": "test"})
+    with pytest.raises(ValueError) as exc:
+        load_creds()
+    assert "Vendor credentials file not found." in str(exc.value)
 
 
 def test_read_marc_file_stream(stub_file):

@@ -66,7 +66,7 @@ def connect(name: str) -> Client:
 
 def create_logger_dict() -> dict:
     """Create a dictionary to configure logger."""
-    loggly_token = os.environ["LOGGLY_TOKEN"]
+    loggly_token = os.environ.get("LOGGLY_TOKEN")
     return {
         "version": 1,
         "disable_existing_loggers": False,
@@ -148,19 +148,25 @@ def load_creds(config_path: Optional[str] = None) -> None:
         config_path: Path to .yaml file with credentials.
 
     """
-    if config_path is None:
-        config_path = os.path.join(
-            os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml"
-        )
-    with open(config_path, "r") as file:
-        config = yaml.safe_load(file)
-        if config is None:
-            raise ValueError("No credentials found in config file.")
-        for k, v in config.items():
-            os.environ[k] = str(v)
-        vendor_list = get_vendor_list()
-        for vendor in vendor_list:
-            os.environ[f"{vendor}_DST"] = f"NSDROP/vendor_records/{vendor.lower()}"
+    try:
+        if config_path is None and os.environ.get("USERPROFILE") is not None:
+            config_path = os.path.join(
+                os.environ["USERPROFILE"], ".cred/.sftp/connections.yaml"
+            )
+        if config_path is None or not os.path.exists(config_path):
+            raise ValueError("Vendor credentials file not found.")
+        with open(config_path, "r") as file:
+            config = yaml.safe_load(file)
+            if config is None:
+                raise ValueError("No credentials found in config file.")
+            for k, v in config.items():
+                os.environ[k] = str(v)
+            vendor_list = get_vendor_list()
+            for vendor in vendor_list:
+                os.environ[f"{vendor}_DST"] = f"NSDROP/vendor_records/{vendor.lower()}"
+    except ValueError as e:
+        logger.error(str(e))
+        raise e
 
 
 def get_vendor_list() -> list[str]:
@@ -171,8 +177,15 @@ def get_vendor_list() -> list[str]:
     Returns:
         list of vendors (eg. EASTVIEW, LEILA) whose credentials have been loaded.
     """
-    hosts = [i for i in os.environ.keys() if i.endswith("_HOST")]
-    return [i.split("_HOST")[0] for i in hosts if "NSDROP" not in i]
+    try:
+        hosts = [i for i in os.environ.keys() if i.endswith("_HOST")]
+        vendors = [i.split("_HOST")[0] for i in hosts if "NSDROP" not in i]
+        if vendors == []:
+            raise ValueError("No vendors found in environment variables.")
+        return vendors
+    except ValueError as e:
+        logger.error(str(e))
+        raise e
 
 
 def read_marc_file_stream(file_obj: File) -> Generator[Record, None, None]:
