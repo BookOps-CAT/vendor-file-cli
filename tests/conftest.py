@@ -142,6 +142,7 @@ def mock_vendor_creds() -> str:
 def mock_open_file(mock_vendor_creds, mocker) -> None:
     m = mocker.mock_open(read_data=mock_vendor_creds)
     mocker.patch("vendor_file_cli.utils.open", m)
+    mocker.patch.dict(os.environ, {"USERPROFILE": "test"})
     mocker.patch("os.path.exists", lambda *args, **kwargs: True)
 
 
