@@ -1,3 +1,4 @@
+import os
 from click.testing import CliRunner
 import pytest
 from vendor_file_cli import vendor_file_cli, main
@@ -26,9 +27,25 @@ def test_vendor_file_cli_get_all_vendor_files(cli_runner, caplog):
     assert "(MIDWEST_NYPL) Client session closed" in caplog.text
 
 
+def test_vendor_file_cli_get_all_vendor_files_no_creds(mocker, cli_runner, caplog):
+    mocker.patch.dict(os.environ, {}, clear=True)
+    cli_runner.invoke(cli=vendor_file_cli, args=["all-vendor-files"])
+    assert (
+        "vendor_file_cli",
+        10,
+        "Vendor credentials not in environment variables. Loading from file.",
+    ) in caplog.record_tuples
+    assert (
+        "vendor_file_cli.utils",
+        40,
+        "Vendor credentials file not found.",
+    ) in caplog.record_tuples
+
+
 def test_vendor_file_cli_get_available_vendors(cli_runner):
     result = cli_runner.invoke(cli=vendor_file_cli, args=["available-vendors"])
     assert result.exit_code == 0
+    assert "Available vendors: " in result.stdout
     assert (
         "Available vendors: ['EASTVIEW', 'LEILA', 'MIDWEST_NYPL', 'BAKERTAYLOR_BPL']"
         in result.stdout

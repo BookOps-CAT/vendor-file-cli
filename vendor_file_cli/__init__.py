@@ -1,8 +1,9 @@
 import logging
 import logging.config
+import os
 import click
 from vendor_file_cli.commands import get_vendor_files, validate_files
-from vendor_file_cli.utils import create_logger_dict, get_vendor_list
+from vendor_file_cli.utils import create_logger_dict, get_vendor_list, load_creds
 
 logger = logging.getLogger("vendor_file_cli")
 
@@ -10,6 +11,11 @@ logger = logging.getLogger("vendor_file_cli")
 @click.group
 def vendor_file_cli() -> None:
     """CLI for retrieving and validating files from vendor FTP/SFTP servers."""
+    if any("NSDROP" in i for i in os.environ.keys()) is False:
+        logger.debug(
+            "Vendor credentials not in environment variables. Loading from file."
+        )
+        load_creds()
     logger_dict = create_logger_dict()
     logging.config.dictConfig(logger_dict)
     pass
