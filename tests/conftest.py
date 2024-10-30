@@ -119,7 +119,7 @@ def mock_Client(monkeypatch, mock_sheet_config):
 
 
 @pytest.fixture
-def mock_vendor_creds(monkeypatch) -> str:
+def mock_vendor_creds() -> str:
     vendors = ["NSDROP", "EASTVIEW", "LEILA", "MIDWEST_NYPL", "BAKERTAYLOR_BPL"]
     env = {"LOGGLY_TOKEN": "foo"}
     for vendor in vendors:
@@ -139,10 +139,10 @@ def mock_vendor_creds(monkeypatch) -> str:
 
 
 @pytest.fixture
-def mock_open_file(mock_vendor_creds, mocker, monkeypatch) -> None:
+def mock_open_file(mock_vendor_creds, mocker) -> None:
     m = mocker.mock_open(read_data=mock_vendor_creds)
     mocker.patch("vendor_file_cli.utils.open", m)
-    monkeypatch.setenv("USERPROFILE", "test")
+    mocker.patch("os.path.exists", lambda *args, **kwargs: True)
 
 
 @pytest.fixture
@@ -152,7 +152,6 @@ def unset_env_var(monkeypatch, mock_vendor_creds) -> None:
     for var in env_vars:
         if any(key in var for key in keys):
             monkeypatch.delenv(var, raising=False)
-    monkeypatch.setenv("USERPROFILE", "test")
 
 
 @pytest.fixture
@@ -206,7 +205,6 @@ def mock_sheet_config(monkeypatch, caplog, mock_open_file):
         return MockResource()
 
     caplog.set_level(logging.DEBUG)
-    monkeypatch.setenv("USERPROFILE", "test")
     monkeypatch.setattr("googleapiclient.discovery.build", build_sheet)
     monkeypatch.setattr("googleapiclient.discovery.build_from_document", build_sheet)
     monkeypatch.setattr(
