@@ -1237,7 +1237,7 @@ pymarc = "^5.2.2"
 type = "git"
 url = "https://github.com/BookOps-CAT/record-validator.git"
 reference = "HEAD"
-resolved_reference = "c81f97bbbebef3779319ec3ec1fe9e7dec48ccf9"
+resolved_reference = "76efaaebf79fe8f1a6675720339915a8dc8e5853"
 
 [[package]]
 name = "requests"
