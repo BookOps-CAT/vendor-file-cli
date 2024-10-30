@@ -81,6 +81,12 @@ def validate_vendor_files(vendor: str, file: str) -> None:
     Returns:
         None
     """
+    if vendor.upper() not in ["EASTVIEW", "LEILA", "AMALIVRE_SASB"]:
+        click.echo(
+            "Vendor not supported for validation."
+            "Only EASTVIEW, LEILA, and AMALIVRE_SASB supported."
+        )
+        return
     validate_files(vendor=vendor, files=[file])
 
 
