@@ -140,6 +140,25 @@ def get_control_number(record: Record) -> str:
     return "None"
 
 
+def get_vendor_list() -> list[str]:
+    """
+    Read environment variables and return a list of vendors whose
+    credentials have been loaded.
+
+    Returns:
+        list of vendors (eg. EASTVIEW, LEILA) whose credentials have been loaded.
+    """
+    try:
+        hosts = [i for i in os.environ.keys() if i.endswith("_HOST")]
+        vendors = [i.split("_HOST")[0] for i in hosts if "NSDROP" not in i]
+        if vendors == []:
+            raise ValueError("No vendors found in environment variables.")
+        return vendors
+    except ValueError as e:
+        logger.error(str(e))
+        raise e
+
+
 def load_creds(config_path: Optional[str] = None) -> None:
     """
     Read yaml file with credentials and set as environment variables.
@@ -164,25 +183,6 @@ def load_creds(config_path: Optional[str] = None) -> None:
             vendor_list = get_vendor_list()
             for vendor in vendor_list:
                 os.environ[f"{vendor}_DST"] = f"NSDROP/vendor_records/{vendor.lower()}"
-    except ValueError as e:
-        logger.error(str(e))
-        raise e
-
-
-def get_vendor_list() -> list[str]:
-    """
-    Read environment variables and return a list of vendors whose
-    credentials have been loaded.
-
-    Returns:
-        list of vendors (eg. EASTVIEW, LEILA) whose credentials have been loaded.
-    """
-    try:
-        hosts = [i for i in os.environ.keys() if i.endswith("_HOST")]
-        vendors = [i.split("_HOST")[0] for i in hosts if "NSDROP" not in i]
-        if vendors == []:
-            raise ValueError("No vendors found in environment variables.")
-        return vendors
     except ValueError as e:
         logger.error(str(e))
         raise e
