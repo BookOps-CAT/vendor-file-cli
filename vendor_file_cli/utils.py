@@ -66,8 +66,6 @@ def connect(name: str) -> Client:
 
 def create_logger_dict() -> dict:
     """Create a dictionary to configure logger."""
-    if any("NSDROP" in i for i in os.environ.keys()) is False:
-        load_creds()
     loggly_token = os.environ["LOGGLY_TOKEN"]
     return {
         "version": 1,
