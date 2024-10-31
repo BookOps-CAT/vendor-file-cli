@@ -1,7 +1,9 @@
 import datetime
+import ftplib
 import io
 import logging
 import os
+import paramiko
 from googleapiclient.errors import HttpError  # type: ignore
 from pydantic_core import ValidationError, InitErrorDetails
 from pymarc import Record, Field, Subfield, Indicators
@@ -9,7 +11,6 @@ import pytest
 from click.testing import CliRunner
 from file_retriever.file import File, FileInfo
 from file_retriever.connect import Client
-from file_retriever._clients import _ftpClient, _sftpClient
 
 
 class MockFileInfo(FileInfo):
@@ -73,11 +74,20 @@ class MockSession:
     def _check_dir(self, *args, **kwargs):
         pass
 
+    def _is_file(self, dir, file_name, *args, **kwargs) -> bool:
+        return True
+
     def close(self, *args, **kwargs):
         pass
 
+    def fetch_file(self, file, *args, **kwargs) -> File:
+        return File.from_fileinfo(file, io.BytesIO(mock_marc().as_marc21()))
+
     def get_file_data(self, file_name, *args, **kwargs) -> FileInfo:
         return MockFileInfo(file_name=file_name)
+
+    def is_active(self, *args, **kwargs) -> bool:
+        return True
 
     def list_file_data(self, dir, *args, **kwargs) -> list[FileInfo]:
         if "NSDROP" in dir:
@@ -93,9 +103,6 @@ class MockSession:
         else:
             return ["foo.mrc"]
 
-    def fetch_file(self, file, *args, **kwargs) -> File:
-        return File.from_fileinfo(file, io.BytesIO(mock_marc().as_marc21()))
-
     def write_file(self, file, *args, **kwargs) -> FileInfo:
         return MockFileInfo(file_name=file.file_name)
 
@@ -108,14 +115,41 @@ def mock_Client(monkeypatch, mock_sheet_config):
         original_connect_to_server(self, username, password)
         return MockSession()
 
-    monkeypatch.setattr(_ftpClient, "_connect_to_server", lambda *args, **kwargs: None)
-    monkeypatch.setattr(_sftpClient, "_connect_to_server", lambda *args, **kwargs: None)
+    def mock_response(*args, **kwargs):
+        pass
+
+    monkeypatch.setattr(ftplib.FTP, "connect", mock_response)
+    monkeypatch.setattr(ftplib.FTP, "login", mock_response)
+    monkeypatch.setattr(paramiko.SSHClient, "connect", mock_response)
+    monkeypatch.setattr(paramiko.SSHClient, "load_system_host_keys", mock_response)
+    monkeypatch.setattr(paramiko.SSHClient, "open_sftp", mock_response)
     monkeypatch.setattr(Client, "_Client__connect_to_server", mock_connect_to_server)
     monkeypatch.setattr(Client, "check_file", lambda *args, **kwargs: False)
-    monkeypatch.setattr(Client, "is_file", True)
-    monkeypatch.setattr(
-        "vendor_file_cli.validator.write_data_to_sheet", lambda *args, **kwargs: None
-    )
+    monkeypatch.setattr("vendor_file_cli.validator.write_data_to_sheet", mock_response)
+    monkeypatch.setattr(os.path, "isfile", lambda *args, **kwargs: True)
+
+
+@pytest.fixture
+def mock_connect(mock_Client):
+    def mock_client_response(name):
+        client_name = name.upper()
+        return Client(
+            name=client_name,
+            username=os.environ[f"{client_name}_USER"],
+            password=os.environ[f"{client_name}_PASSWORD"],
+            host=os.environ[f"{client_name}_HOST"],
+            port=os.environ[f"{client_name}_PORT"],
+        )
+
+    return mock_client_response
+
+
+@pytest.fixture
+def mock_Client_auth_error(monkeypatch, mock_Client):
+    def mock_connect_to_server(*args, **kwargs):
+        raise ftplib.error_perm
+
+    monkeypatch.setattr(ftplib.FTP, "login", mock_connect_to_server)
 
 
 @pytest.fixture
