@@ -1,10 +1,7 @@
 import datetime
 import ftplib
 import io
-import logging
 import os
-import paramiko
-from googleapiclient.errors import HttpError  # type: ignore
 from pydantic_core import ValidationError, InitErrorDetails
 from pymarc import Record, Field, Subfield, Indicators
 import pytest
@@ -13,7 +10,12 @@ from file_retriever.file import File, FileInfo
 from file_retriever.connect import Client
 
 
-class MockFileInfo(FileInfo):
+@pytest.fixture(autouse=True)
+def set_caplog_level(caplog):
+    caplog.set_level("DEBUG")
+
+
+class StubFileInfo(FileInfo):
     def __init__(self, file_name: str | None = None):
         today = datetime.datetime.now(tz=datetime.timezone.utc)
         mtime = (today - datetime.timedelta(days=10)).timestamp()
@@ -22,7 +24,7 @@ class MockFileInfo(FileInfo):
         super().__init__(file_name, mtime, 33188, 140401, 0, 0, None)
 
 
-def mock_marc() -> Record:
+def stub_marc() -> Record:
     bib = Record()
     bib.leader = "00454cam a22001575i 4500"
     bib.add_field(Field(tag="001", data="on1381158740"))
@@ -38,17 +40,17 @@ def mock_marc() -> Record:
 
 @pytest.fixture
 def stub_record() -> Record:
-    return mock_marc()
+    return stub_marc()
 
 
 @pytest.fixture
 def stub_file_info() -> FileInfo:
-    return MockFileInfo(file_name="foo.mrc")
+    return StubFileInfo(file_name="foo.mrc")
 
 
 @pytest.fixture
 def stub_file(stub_file_info, mock_valid_record) -> File:
-    return File.from_fileinfo(stub_file_info, io.BytesIO(mock_marc().as_marc21()))
+    return File.from_fileinfo(stub_file_info, io.BytesIO(stub_marc().as_marc21()))
 
 
 @pytest.fixture
@@ -81,19 +83,19 @@ class MockSession:
         pass
 
     def fetch_file(self, file, *args, **kwargs) -> File:
-        return File.from_fileinfo(file, io.BytesIO(mock_marc().as_marc21()))
+        return File.from_fileinfo(file, io.BytesIO(stub_marc().as_marc21()))
 
     def get_file_data(self, file_name, *args, **kwargs) -> FileInfo:
-        return MockFileInfo(file_name=file_name)
+        return StubFileInfo(file_name=file_name)
 
     def is_active(self, *args, **kwargs) -> bool:
         return True
 
     def list_file_data(self, dir, *args, **kwargs) -> list[FileInfo]:
         if "NSDROP" in dir:
-            return [MockFileInfo(file_name="bar.mrc")]
+            return [StubFileInfo(file_name="bar.mrc")]
         else:
-            return [MockFileInfo(file_name="foo.mrc")]
+            return [StubFileInfo(file_name="foo.mrc")]
 
     def list_file_names(self, dir, *args, **kwargs) -> list[str]:
         if "NSDROP" in dir:
@@ -104,52 +106,48 @@ class MockSession:
             return ["foo.mrc"]
 
     def write_file(self, file, *args, **kwargs) -> FileInfo:
-        return MockFileInfo(file_name=file.file_name)
+        return StubFileInfo(file_name=file.file_name)
 
 
 @pytest.fixture
-def mock_Client(monkeypatch, mock_sheet_config):
+def stub_client(monkeypatch, mock_sheet_config):
     original_connect_to_server = Client._Client__connect_to_server
 
     def mock_connect_to_server(self, username, password):
         original_connect_to_server(self, username, password)
         return MockSession()
 
-    def mock_response(*args, **kwargs):
+    def stub_response(*args, **kwargs):
         pass
 
-    monkeypatch.setattr(ftplib.FTP, "connect", mock_response)
-    monkeypatch.setattr(ftplib.FTP, "login", mock_response)
-    monkeypatch.setattr(paramiko.SSHClient, "connect", mock_response)
-    monkeypatch.setattr(paramiko.SSHClient, "load_system_host_keys", mock_response)
-    monkeypatch.setattr(paramiko.SSHClient, "open_sftp", mock_response)
+    monkeypatch.setattr("ftplib.FTP.connect", stub_response)
+    monkeypatch.setattr("ftplib.FTP.login", stub_response)
+    monkeypatch.setattr("paramiko.SSHClient.connect", stub_response)
+    monkeypatch.setattr("paramiko.SSHClient.load_system_host_keys", stub_response)
+    monkeypatch.setattr("paramiko.SSHClient.open_sftp", stub_response)
     monkeypatch.setattr(Client, "_Client__connect_to_server", mock_connect_to_server)
     monkeypatch.setattr(Client, "check_file", lambda *args, **kwargs: False)
-    monkeypatch.setattr("vendor_file_cli.validator.write_data_to_sheet", mock_response)
+    monkeypatch.setattr("vendor_file_cli.validator.write_data_to_sheet", stub_response)
     monkeypatch.setattr(os.path, "isfile", lambda *args, **kwargs: True)
 
-
-@pytest.fixture
-def mock_connect(mock_Client):
-    def mock_client_response(name):
-        client_name = name.upper()
+    def stub_client_response(name):
         return Client(
-            name=client_name,
-            username=os.environ[f"{client_name}_USER"],
-            password=os.environ[f"{client_name}_PASSWORD"],
-            host=os.environ[f"{client_name}_HOST"],
-            port=os.environ[f"{client_name}_PORT"],
+            name=name.upper(),
+            username=os.environ[f"{name.upper()}_USER"],
+            password=os.environ[f"{name.upper()}_PASSWORD"],
+            host=os.environ[f"{name.upper()}_HOST"],
+            port=os.environ[f"{name.upper()}_PORT"],
         )
 
-    return mock_client_response
+    return stub_client_response
 
 
 @pytest.fixture
-def mock_Client_auth_error(monkeypatch, mock_Client):
+def stub_client_auth_error(monkeypatch, stub_client):
     def mock_connect_to_server(*args, **kwargs):
         raise ftplib.error_perm
 
-    monkeypatch.setattr(ftplib.FTP, "login", mock_connect_to_server)
+    monkeypatch.setattr("ftplib.FTP.login", mock_connect_to_server)
 
 
 @pytest.fixture
@@ -190,7 +188,7 @@ def unset_env_var(monkeypatch, mock_vendor_creds) -> None:
 
 
 @pytest.fixture
-def cli_runner(monkeypatch, mock_Client) -> CliRunner:
+def cli_runner(monkeypatch, stub_client) -> CliRunner:
     runner = CliRunner()
 
     def mock_logging(*args, **kwargs):
@@ -235,11 +233,10 @@ class MockCreds:
 
 
 @pytest.fixture
-def mock_sheet_config(monkeypatch, caplog, mock_open_file):
+def mock_sheet_config(monkeypatch, mock_open_file):
     def build_sheet(*args, **kwargs):
         return MockResource()
 
-    caplog.set_level(logging.DEBUG)
     monkeypatch.setattr("googleapiclient.discovery.build", build_sheet)
     monkeypatch.setattr("googleapiclient.discovery.build_from_document", build_sheet)
     monkeypatch.setattr(
@@ -283,23 +280,6 @@ class MockResource:
 
     def values(self, *args, **kwargs):
         return self
-
-
-class MockError:
-    def __init__(self):
-        self.status = 400
-        self.reason = "bad_request"
-
-
-@pytest.fixture
-def mock_sheet_http_error(monkeypatch):
-    def mock_error(*args, **kwargs):
-        raise HttpError(
-            resp=MockError(), content=b"{'message':  'Bad Request'}", uri="foo"
-        )
-
-    monkeypatch.setattr("googleapiclient.discovery.build", mock_error)
-    monkeypatch.setattr("googleapiclient.discovery.build_from_document", mock_error)
 
 
 @pytest.fixture

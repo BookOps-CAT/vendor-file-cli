@@ -38,7 +38,7 @@ def test_configure_sheet_generate_new_creds(mock_sheet_config_no_creds):
     assert creds.refresh_token is not None
 
 
-def test_connect(mock_Client):
+def test_connect(stub_client):
     client = connect("leila")
     assert client.name == "LEILA"
     assert client.host == "ftp.leila.com"
@@ -155,17 +155,7 @@ def test_write_data_to_sheet(mock_sheet_config):
     assert sorted(list(keys)) == sorted(["spreadsheetId", "tableRange"])
 
 
-def test_write_data_to_sheet_http_error(
-    mock_sheet_config, mock_sheet_http_error, caplog
-):
-    data = write_data_to_sheet({"file_name": ["foo.mrc"], "vendor_code": ["FOO"]})
-    assert data is None
-    assert "Error occurred while sending data to google sheet: " in caplog.text
-
-
-def test_write_data_to_sheet_timeout_error(
-    mock_sheet_config, mock_sheet_timeout_error, caplog
-):
+def test_write_data_to_sheet_error(mock_sheet_config, mock_sheet_timeout_error, caplog):
     data = write_data_to_sheet({"file_name": ["foo.mrc"], "vendor_code": ["FOO"]})
     assert data is None
     assert (
