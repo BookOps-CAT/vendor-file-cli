@@ -4,6 +4,7 @@ import logging
 import logging.handlers
 import datetime
 import os
+from file_retriever.errors import FileRetrieverError
 from vendor_file_cli.validator import (
     validate_file,
     get_single_file,
@@ -40,30 +41,33 @@ def get_vendor_files(
     """
     for vendor in vendors:
         vendor_dst = os.environ[f"{vendor.upper()}_DST"]
-        with connect("nsdrop") as nsdrop_client:
-            with connect(vendor) as vendor_client:
-                files = get_vendor_file_list(
-                    vendor=vendor,
-                    timedelta=datetime.timedelta(days=days, hours=hours),
-                    nsdrop_client=nsdrop_client,
-                    vendor_client=vendor_client,
-                )
-                logger.info(
-                    f"({vendor_client.name}) {len(files)} file(s) on "
-                    f"{vendor_client.name} server to copy to NSDROP"
-                )
-                for file in files:
-                    get_single_file(
+        try:
+            with connect("nsdrop") as nsdrop_client:
+                with connect(vendor) as vendor_client:
+                    files = get_vendor_file_list(
                         vendor=vendor,
-                        file=file,
-                        vendor_client=vendor_client,
+                        timedelta=datetime.timedelta(days=days, hours=hours),
                         nsdrop_client=nsdrop_client,
+                        vendor_client=vendor_client,
                     )
-                if len(files) > 0:
                     logger.info(
-                        f"({nsdrop_client.name}) {len(files)} file(s) "
-                        f"copied to `{vendor_dst}`"
+                        f"({vendor_client.name}) {len(files)} file(s) on "
+                        f"{vendor_client.name} server to copy to NSDROP"
                     )
+                    for file in files:
+                        get_single_file(
+                            vendor=vendor,
+                            file=file,
+                            vendor_client=vendor_client,
+                            nsdrop_client=nsdrop_client,
+                        )
+                    if len(files) > 0:
+                        logger.info(
+                            f"({nsdrop_client.name}) {len(files)} file(s) "
+                            f"copied to `{vendor_dst}`"
+                        )
+        except FileRetrieverError:
+            continue
 
 
 def validate_files(vendor: str, files: list | None) -> None:
