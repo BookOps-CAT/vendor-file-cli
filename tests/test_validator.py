@@ -6,13 +6,12 @@ from vendor_file_cli.validator import (
     validate_file,
     validate_single_record,
 )
-from vendor_file_cli.utils import connect
 
 
 @pytest.mark.parametrize("vendor", ["midwest_nypl", "bakertaylor_bpl"])
-def test_get_single_file_no_validation(mock_Client, stub_file_info, vendor, caplog):
-    vendor_client = connect(vendor)
-    nsdrop_client = connect("nsdrop")
+def test_get_single_file_no_validation(mock_connect, stub_file_info, vendor, caplog):
+    vendor_client = mock_connect(vendor)
+    nsdrop_client = mock_connect("nsdrop")
     get_single_file(
         vendor=vendor,
         file=stub_file_info,
@@ -30,9 +29,9 @@ def test_get_single_file_no_validation(mock_Client, stub_file_info, vendor, capl
     )
 
 
-def test_get_single_file_with_validation(mock_Client, stub_file_info, caplog):
-    vendor_client = connect("eastview")
-    nsdrop_client = connect("nsdrop")
+def test_get_single_file_with_validation(mock_connect, stub_file_info, caplog):
+    vendor_client = mock_connect("eastview")
+    nsdrop_client = mock_connect("nsdrop")
     get_single_file(
         vendor="eastview",
         file=stub_file_info,
@@ -45,9 +44,9 @@ def test_get_single_file_with_validation(mock_Client, stub_file_info, caplog):
     assert "(NSDROP) Writing foo.mrc to `NSDROP/vendor_records/eastview`" in caplog.text
 
 
-def test_get_single_file_bakertaylor_bpl_root(mock_Client, stub_file_info, caplog):
-    vendor_client = connect("bakertaylor_bpl")
-    nsdrop_client = connect("nsdrop")
+def test_get_single_file_bakertaylor_bpl_root(mock_connect, stub_file_info, caplog):
+    vendor_client = mock_connect("bakertaylor_bpl")
+    nsdrop_client = mock_connect("nsdrop")
     stub_file_info.file_name = "ADDfoo.mrc"
     get_single_file(
         vendor="bakertaylor_bpl",
@@ -67,10 +66,10 @@ def test_get_single_file_bakertaylor_bpl_root(mock_Client, stub_file_info, caplo
 
 
 @pytest.mark.parametrize("vendor", ["midwest_nypl", "bakertaylor_bpl"])
-def test_get_vendor_file_list(mock_Client, vendor, caplog):
+def test_get_vendor_file_list(mock_connect, vendor, caplog):
     file_list = []
-    with connect("nsdrop") as nsdrop_client:
-        with connect(vendor) as vendor_client:
+    with mock_connect("nsdrop") as nsdrop_client:
+        with mock_connect(vendor) as vendor_client:
             file_list.extend(
                 get_vendor_file_list(
                     vendor=vendor,
