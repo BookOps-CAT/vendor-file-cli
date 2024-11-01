@@ -9,7 +9,7 @@ colorama==0.4.6 ; python_version >= "3.10" and python_version < "4.0" and (platf
 coverage[toml]==7.6.1 ; python_version >= "3.10" and python_version < "4.0"
 cryptography==43.0.0 ; python_version >= "3.10" and python_version < "4.0"
 exceptiongroup==1.2.2 ; python_version >= "3.10" and python_version < "3.11"
-file-retriever @ git+https://github.com/BookOps-CAT/file-retriever.git@ca38f28f54c509d81c15f3fd460e463992e8a3a5 ; python_version >= "3.10" and python_version < "4.0"
+file-retriever @ git+https://github.com/BookOps-CAT/file-retriever.git@cf51d2cbb8c83aa9019f8dceae0f7ae918547525 ; python_version >= "3.10" and python_version < "4.0"
 google-api-core==2.20.0 ; python_version >= "3.10" and python_version < "4.0"
 google-api-python-client==2.146.0 ; python_version >= "3.10" and python_version < "4.0"
 google-auth-httplib2==0.2.0 ; python_version >= "3.10" and python_version < "4.0"

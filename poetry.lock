@@ -445,7 +445,7 @@ types-pyyaml = "^6.0.12.20240311"
 type = "git"
 url = "https://github.com/BookOps-CAT/file-retriever.git"
 reference = "HEAD"
-resolved_reference = "ca38f28f54c509d81c15f3fd460e463992e8a3a5"
+resolved_reference = "cf51d2cbb8c83aa9019f8dceae0f7ae918547525"
 
 [[package]]
 name = "google-api-core"
