@@ -25,7 +25,10 @@ def configure_sheet() -> Credentials:
     Returns:
         google.oauth2.credentials.Credentials: Credentials object for google sheet API.
     """
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/accounts.reauth",
+    ]
     token_uri = "https://oauth2.googleapis.com/token"
 
     creds_dict = {
@@ -229,10 +232,7 @@ def write_data_to_sheet(values: dict) -> Union[dict, None]:
     """
     vendor_code = values["vendor_code"][0]
     creds = configure_sheet()
-    logger.debug(
-        f"Google sheet API credentials configured. "
-        f"Writing data to google sheet for {vendor_code}."
-    )
+    logger.debug("Google sheet API credentials configured.")
     df = pd.DataFrame(
         values,
         columns=[
