@@ -25,21 +25,45 @@ def configure_sheet() -> Credentials:
     Returns:
         google.oauth2.credentials.Credentials: Credentials object for google sheet API.
     """
-    scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    cred_path = os.path.join(
-        os.environ["USERPROFILE"], ".cred/.google/desktop-app.json"
-    )
-    token_path = os.path.join(os.environ["USERPROFILE"], ".cred/.google/token.json")
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/accounts.reauth",
+    ]
+    token_uri = "https://oauth2.googleapis.com/token"
 
-    creds = Credentials.from_authorized_user_file(token_path, scopes)
+    creds_dict = {
+        "token": os.environ["GOOGLE_SHEET_TOKEN"],
+        "refresh_token": os.environ["GOOGLE_SHEET_REFRESH_TOKEN"],
+        "token_uri": token_uri,
+        "client_id": os.environ["GOOGLE_SHEET_CLIENT_ID"],
+        "client_secret": os.environ["GOOGLE_SHEET_CLIENT_SECRET"],
+        "scopes": scopes,
+        "universe_domain": "googleapis.com",
+        "account": "",
+        "expiry": "2024-11-06T15:15:43.146164Z",
+    }
+    flow_dict = {
+        "installed": {
+            "client_id": os.environ["GOOGLE_SHEET_CLIENT_ID"],
+            "client_secret": os.environ["GOOGLE_SHEET_CLIENT_SECRET"],
+            "project_id": "marc-record-validator",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": token_uri,
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "redirect_uris": ["http://localhost"],
+        }
+    }
+
+    creds = Credentials.from_authorized_user_info(creds_dict)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(cred_path, scopes)
+            logger.debug(
+                "Token for Google Sheet API not found. Running credential config flow."
+            )
+            flow = InstalledAppFlow.from_client_config(flow_dict, scopes)
             creds = flow.run_local_server()
-        with open(token_path, "w") as token:
-            token.write(creds.to_json())
     return creds
 
 
@@ -208,7 +232,7 @@ def write_data_to_sheet(values: dict) -> Union[dict, None]:
     """
     vendor_code = values["vendor_code"][0]
     creds = configure_sheet()
-
+    logger.debug("Google sheet API credentials configured.")
     df = pd.DataFrame(
         values,
         columns=[

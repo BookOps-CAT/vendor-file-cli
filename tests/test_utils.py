@@ -30,12 +30,16 @@ def test_configure_sheet_invalid(mock_sheet_config_creds_invalid):
     assert creds.refresh_token is not None
 
 
-def test_configure_sheet_generate_new_creds(mock_sheet_config_no_creds):
+def test_configure_sheet_generate_new_creds(mock_sheet_config_no_creds, caplog):
     creds = configure_sheet()
     assert creds.token == "foo"
     assert creds.valid is True
     assert creds.expired is False
     assert creds.refresh_token is not None
+    assert (
+        "Token for Google Sheet API not found. Running credential config flow."
+        in caplog.text
+    )
 
 
 def test_connect(stub_client):
@@ -149,10 +153,11 @@ def test_read_marc_file_stream(stub_file):
     assert len(records) == 1
 
 
-def test_write_data_to_sheet(mock_sheet_config):
+def test_write_data_to_sheet(mock_sheet_config, caplog):
     data = write_data_to_sheet({"file_name": ["foo.mrc"], "vendor_code": ["FOO"]})
     keys = data.keys()
     assert sorted(list(keys)) == sorted(["spreadsheetId", "tableRange"])
+    assert "Google sheet API credentials configured." in caplog.text
 
 
 def test_write_data_to_sheet_error(mock_sheet_config, mock_sheet_timeout_error, caplog):

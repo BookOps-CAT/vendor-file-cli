@@ -240,10 +240,14 @@ def mock_sheet_config(monkeypatch, mock_open_file):
     monkeypatch.setattr("googleapiclient.discovery.build", build_sheet)
     monkeypatch.setattr("googleapiclient.discovery.build_from_document", build_sheet)
     monkeypatch.setattr(
-        "google.oauth2.credentials.Credentials.from_authorized_user_file",
+        "google.oauth2.credentials.Credentials.from_authorized_user_info",
         lambda *args, **kwargs: MockCreds(),
     )
     monkeypatch.setattr("vendor_file_cli.utils.load_creds", lambda *args: None)
+    monkeypatch.setenv("GOOGLE_SHEET_TOKEN", "foo")
+    monkeypatch.setenv("GOOGLE_SHEET_REFRESH_TOKEN", "bar")
+    monkeypatch.setenv("GOOGLE_SHEET_CLIENT_ID", "baz")
+    monkeypatch.setenv("GOOGLE_SHEET_CLIENT_SECRET", "qux")
 
 
 @pytest.fixture
@@ -255,11 +259,11 @@ def mock_sheet_config_creds_invalid(monkeypatch, mock_sheet_config):
 @pytest.fixture
 def mock_sheet_config_no_creds(monkeypatch, mock_sheet_config):
     monkeypatch.setattr(
-        "google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file",
+        "google_auth_oauthlib.flow.InstalledAppFlow.from_client_config",
         lambda *args, **kwargs: MockCreds(),
     )
     monkeypatch.setattr(
-        "google.oauth2.credentials.Credentials.from_authorized_user_file",
+        "google.oauth2.credentials.Credentials.from_authorized_user_info",
         lambda *args, **kwargs: None,
     )
 
