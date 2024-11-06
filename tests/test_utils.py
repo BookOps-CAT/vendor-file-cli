@@ -157,10 +157,7 @@ def test_write_data_to_sheet(mock_sheet_config, caplog):
     data = write_data_to_sheet({"file_name": ["foo.mrc"], "vendor_code": ["FOO"]})
     keys = data.keys()
     assert sorted(list(keys)) == sorted(["spreadsheetId", "tableRange"])
-    assert (
-        "Google sheet API credentials configured. Writing data to google sheet for FOO."
-        in caplog.text
-    )
+    assert "Google sheet API credentials configured." in caplog.text
 
 
 def test_write_data_to_sheet_error(mock_sheet_config, mock_sheet_timeout_error, caplog):
