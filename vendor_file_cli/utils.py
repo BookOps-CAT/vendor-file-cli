@@ -4,6 +4,7 @@ import yaml
 from typing import Generator, Optional, Union
 from googleapiclient.discovery import build  # type: ignore
 from googleapiclient.errors import HttpError  # type: ignore
+from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
@@ -32,11 +33,11 @@ def configure_sheet() -> Credentials:
     token_uri = "https://oauth2.googleapis.com/token"
 
     creds_dict = {
-        "token": os.environ["GOOGLE_SHEET_TOKEN"],
-        "refresh_token": os.environ["GOOGLE_SHEET_REFRESH_TOKEN"],
+        "token": os.getenv("GOOGLE_SHEET_TOKEN"),
+        "refresh_token": os.getenv("GOOGLE_SHEET_REFRESH_TOKEN"),
         "token_uri": token_uri,
-        "client_id": os.environ["GOOGLE_SHEET_CLIENT_ID"],
-        "client_secret": os.environ["GOOGLE_SHEET_CLIENT_SECRET"],
+        "client_id": os.getenv("GOOGLE_SHEET_CLIENT_ID"),
+        "client_secret": os.getenv("GOOGLE_SHEET_CLIENT_SECRET"),
         "scopes": scopes,
         "universe_domain": "googleapis.com",
         "account": "",
@@ -44,8 +45,8 @@ def configure_sheet() -> Credentials:
     }
     flow_dict = {
         "installed": {
-            "client_id": os.environ["GOOGLE_SHEET_CLIENT_ID"],
-            "client_secret": os.environ["GOOGLE_SHEET_CLIENT_SECRET"],
+            "client_id": os.getenv("GOOGLE_SHEET_CLIENT_ID"),
+            "client_secret": os.getenv("GOOGLE_SHEET_CLIENT_SECRET"),
             "project_id": "marc-record-validator",
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": token_uri,
@@ -54,17 +55,19 @@ def configure_sheet() -> Credentials:
         }
     }
 
-    creds = Credentials.from_authorized_user_info(creds_dict)
-    if not creds or not creds.valid:
+    try:
+        creds = Credentials.from_authorized_user_info(creds_dict)
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
-        else:
+        elif not creds or not creds.valid:
             logger.debug(
                 "Token for Google Sheet API not found. Running credential config flow."
             )
             flow = InstalledAppFlow.from_client_config(flow_dict, scopes)
             creds = flow.run_local_server()
-    return creds
+        return creds
+    except (ValueError, RefreshError) as e:
+        raise e
 
 
 def connect(name: str) -> Client:
@@ -220,19 +223,19 @@ def read_marc_file_stream(file_obj: File) -> Generator[Record, None, None]:
         yield record
 
 
-def write_data_to_sheet(values: dict) -> Union[dict, None]:
+def write_data_to_sheet(values: dict, test: bool) -> Union[dict, None]:
     """
     Write output of validation to google sheet.
 
     Args:
         values: dictionary containing validation output for a file.
+        test: whether to write to test sheet.
 
     Returns:
         dictionary containing response from google sheet API.
     """
     vendor_code = values["vendor_code"][0]
-    creds = configure_sheet()
-    logger.debug("Google sheet API credentials configured.")
+    file_name = values["file_name"][0]
     df = pd.DataFrame(
         values,
         columns=[
@@ -253,19 +256,25 @@ def write_data_to_sheet(values: dict) -> Union[dict, None]:
         ],
     )
     df.fillna("", inplace=True)
-
     body = {
         "majorDimension": "ROWS",
         "range": f"{vendor_code.upper()}!A1:O10000",
         "values": df.values.tolist(),
     }
+
+    if test is True:
+        spreadsheet_id = "1hGzVYaqxXXBSJa3GY52UFKteZgLoWBo6X0sGsTVTpFU"
+    else:
+        spreadsheet_id = "1ZYuhMIE1WiduV98Pdzzw7RwZ08O-sJo7HJihWVgSOhQ"
+
     try:
+        creds = configure_sheet()
         service = build("sheets", "v4", credentials=creds)
         result = (
             service.spreadsheets()
             .values()
             .append(
-                spreadsheetId="1ZYuhMIE1WiduV98Pdzzw7RwZ08O-sJo7HJihWVgSOhQ",
+                spreadsheetId=spreadsheet_id,
                 range=f"{vendor_code.upper()}!A1:O10000",
                 valueInputOption="USER_ENTERED",
                 insertDataOption="INSERT_ROWS",
@@ -275,6 +284,11 @@ def write_data_to_sheet(values: dict) -> Union[dict, None]:
             .execute()
         )
         return result
+    except (ValueError, RefreshError) as e:
+        logger.error(f"Unable to configure google sheet API credentials: {e}")
     except (HttpError, TimeoutError) as e:
-        logger.error(f"Error occurred while sending data to google sheet: {e}")
-        return None
+        logger.error(f"Unable to send data to google sheet: {e}")
+    logger.error(
+        f"({vendor_code}) Validation data not written to google sheet for {file_name}."
+    )
+    return None

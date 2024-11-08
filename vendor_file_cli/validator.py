@@ -19,7 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_single_file(
-    vendor: str, file: FileInfo, vendor_client: Client, nsdrop_client: Client
+    vendor: str,
+    file: FileInfo,
+    vendor_client: Client,
+    nsdrop_client: Client,
+    test: bool,
 ) -> File:
     """
     Get a file from a vendor server and copy it to the vendor's NSDROP directory.
@@ -43,13 +47,13 @@ def get_single_file(
         remote_dir = os.environ[f"{vendor.upper()}_SRC"]
     nsdrop_dir = os.environ[f"{vendor.upper()}_DST"]
     fetched_file = vendor_client.get_file(file=file, remote_dir=remote_dir)
+    nsdrop_client.put_file(file=fetched_file, dir=nsdrop_dir, remote=True, check=True)
     if vendor.upper() in ["EASTVIEW", "LEILA", "AMALIVRE_SASB"]:
         logger.debug(
             f"({nsdrop_client.name}) Validating {vendor} file: {fetched_file.file_name}"
         )
         output = validate_file(file_obj=fetched_file, vendor=vendor)
-        write_data_to_sheet(output)
-    nsdrop_client.put_file(file=fetched_file, dir=nsdrop_dir, remote=True, check=True)
+        write_data_to_sheet(output, test=test)
     return fetched_file
 
 

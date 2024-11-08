@@ -17,6 +17,7 @@ def test_get_single_file_no_validation(stub_client, stub_file_info, vendor, capl
         file=stub_file_info,
         vendor_client=vendor_client,
         nsdrop_client=nsdrop_client,
+        test=True,
     )
     assert (
         f"({vendor.upper()}) Connecting to ftp.{vendor}.com via FTP client"
@@ -37,6 +38,7 @@ def test_get_single_file_with_validation(stub_client, stub_file_info, caplog):
         file=stub_file_info,
         vendor_client=vendor_client,
         nsdrop_client=nsdrop_client,
+        test=True,
     )
     assert "(EASTVIEW) Connecting to ftp.eastview.com via SFTP client" in caplog.text
     assert "(NSDROP) Connecting to ftp.nsdrop.com via SFTP client" in caplog.text
@@ -53,6 +55,7 @@ def test_get_single_file_bakertaylor_bpl_root(stub_client, stub_file_info, caplo
         file=stub_file_info,
         vendor_client=vendor_client,
         nsdrop_client=nsdrop_client,
+        test=True,
     )
     assert (
         "(BAKERTAYLOR_BPL) Connecting to ftp.bakertaylor_bpl.com via FTP client"

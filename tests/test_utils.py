@@ -22,7 +22,7 @@ def test_configure_sheet_success(mock_sheet_config):
     assert creds.refresh_token is not None
 
 
-def test_configure_sheet_invalid(mock_sheet_config_creds_invalid):
+def test_configure_sheet_expired(mock_sheet_config_expired_creds):
     creds = configure_sheet()
     assert creds.token == "foo"
     assert creds.valid is True
@@ -40,6 +40,23 @@ def test_configure_sheet_generate_new_creds(mock_sheet_config_no_creds, caplog):
         "Token for Google Sheet API not found. Running credential config flow."
         in caplog.text
     )
+
+
+def test_configure_sheet_no_creds(mock_sheet_config_no_creds, caplog):
+    creds = configure_sheet()
+    assert creds.token == "foo"
+    assert creds.valid is True
+    assert creds.expired is False
+    assert creds.refresh_token is not None
+    assert (
+        "Token for Google Sheet API not found. Running credential config flow."
+        in caplog.text
+    )
+
+
+def test_configure_sheet_invalid_creds(mock_sheet_config_invalid_creds, caplog):
+    with pytest.raises(ValueError):
+        configure_sheet()
 
 
 def test_connect(stub_client):
@@ -153,17 +170,43 @@ def test_read_marc_file_stream(stub_file):
     assert len(records) == 1
 
 
-def test_write_data_to_sheet(mock_sheet_config, caplog):
-    data = write_data_to_sheet({"file_name": ["foo.mrc"], "vendor_code": ["FOO"]})
+def test_write_data_to_sheet(mock_sheet_config):
+    data = write_data_to_sheet(
+        {"file_name": ["foo.mrc"], "vendor_code": ["FOO"]}, test=False
+    )
     keys = data.keys()
     assert sorted(list(keys)) == sorted(["spreadsheetId", "tableRange"])
-    assert "Google sheet API credentials configured." in caplog.text
 
 
-def test_write_data_to_sheet_error(mock_sheet_config, mock_sheet_timeout_error, caplog):
-    data = write_data_to_sheet({"file_name": ["foo.mrc"], "vendor_code": ["FOO"]})
+def test_write_data_to_sheet_test(mock_sheet_config):
+    data = write_data_to_sheet(
+        {"file_name": ["foo.mrc"], "vendor_code": ["FOO"]}, test=True
+    )
+    keys = data.keys()
+    assert sorted(list(keys)) == sorted(["spreadsheetId", "tableRange"])
+
+
+def test_write_data_to_sheet_timeout_error(
+    mock_sheet_config, mock_sheet_timeout_error, caplog
+):
+    data = write_data_to_sheet(
+        {"file_name": ["foo.mrc"], "vendor_code": ["FOO"]}, test=False
+    )
     assert data is None
+    assert "Unable to send data to google sheet:" in caplog.text
     assert (
-        "Error occurred while sending data to google sheet: Connection timed out"
-        in caplog.text
+        "(FOO) Validation data not written to google sheet for foo.mrc." in caplog.text
+    )
+
+
+def test_write_data_to_sheet_auth_error(
+    mock_sheet_config, mock_sheet_auth_error, caplog
+):
+    data = write_data_to_sheet(
+        {"file_name": ["foo.mrc"], "vendor_code": ["FOO"]}, test=False
+    )
+    assert data is None
+    assert "Unable to configure google sheet API credentials:" in caplog.text
+    assert (
+        "(FOO) Validation data not written to google sheet for foo.mrc." in caplog.text
     )
