@@ -25,7 +25,8 @@ def vendor_file_cli() -> None:
     "all-vendor-files",
     short_help="Retrieve and validate files that are not in NSDROP.",
 )
-def get_all_vendor_files() -> None:
+@click.option("--test", is_flag=True, help="Run in test mode.")
+def get_all_vendor_files(test) -> None:
     """
     Retrieve files from vendor server which were created in last year and are not
     present in vendor's NSDROP directory. Creates list of files on vendor server
@@ -34,15 +35,26 @@ def get_all_vendor_files() -> None:
     and Amalivre (SASB) before copying them to NSDROP and writes output of validation
     to google sheet. Files are copied to NSDROP/vendor_records/{vendor_name}.
 
+    If test flag is passed, the loggly handler is removed so log messages are only
+    written to the console and log file. The output of any validation is written
+    to a test sheet.
+
     Args:
-        None
+        test: flag to run in test mode
 
     Returns:
         None
 
     """
+    if test:
+        handlers = logger.handlers
+        for handler in handlers:
+            if handler.name == "loggly":
+                logger.removeHandler(handler)
+        logger.info("Running in test mode.")
+
     vendor_list = get_vendor_list()
-    get_vendor_files(vendors=vendor_list, days=365)
+    get_vendor_files(vendors=vendor_list, days=365, test=test)
 
 
 @vendor_file_cli.command("available-vendors", short_help="List all configured vendors.")

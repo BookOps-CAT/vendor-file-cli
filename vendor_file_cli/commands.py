@@ -20,6 +20,7 @@ def get_vendor_files(
     vendors: list[str],
     days: int = 0,
     hours: int = 0,
+    test: bool = False,
 ) -> None:
     """
     Retrieve files from remote server for vendors in `vendor_list`. Forms timedelta
@@ -60,6 +61,7 @@ def get_vendor_files(
                             file=file,
                             vendor_client=vendor_client,
                             nsdrop_client=nsdrop_client,
+                            test=test,
                         )
                     if len(files) > 0:
                         logger.info(

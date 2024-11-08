@@ -1,3 +1,4 @@
+import logging
 import os
 from click.testing import CliRunner
 import pytest
@@ -40,6 +41,17 @@ def test_vendor_file_cli_get_all_vendor_files_no_creds(mocker, cli_runner, caplo
         40,
         "Vendor credentials file not found.",
     ) in caplog.record_tuples
+
+
+def test_vendor_file_cli_get_all_vendor_files_test(cli_runner, caplog):
+    logger = logging.getLogger("vendor_file_cli")
+    loggly = logging.NullHandler()
+    loggly.name = "loggly"
+    logger.addHandler(loggly)
+    result = cli_runner.invoke(cli=vendor_file_cli, args=["all-vendor-files", "--test"])
+    assert result.exit_code == 0
+    assert "Running in test mode" in caplog.text
+    assert logger.handlers == []
 
 
 def test_vendor_file_cli_get_available_vendors(cli_runner):
