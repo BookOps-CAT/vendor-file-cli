@@ -190,21 +190,7 @@ def unset_env_var(monkeypatch, mock_vendor_creds) -> None:
 @pytest.fixture
 def cli_runner(monkeypatch, stub_client) -> CliRunner:
     runner = CliRunner()
-
-    def mock_logging(*args, **kwargs):
-        logger_dict = {"version": 1, "disable_existing_loggers": False}
-        str_format = (
-            "vendor_file_cli-%(asctime)s-%(filename)s-%(levelname)s-%(message)s"
-        )
-        handler = {"class": "StreamHandler", "formatter": "basic", "level": "DEBUG"}
-        logger_dict.update({"formatters": {"basic": {"format": str_format}}})
-        logger_dict.update({"handlers": {"stream": handler}})
-        logger_dict.update({"loggers": {}})
-        logger_dict["loggers"] = {"file_retriever": {"handlers": ["stream"]}}
-        logger_dict["loggers"] = {"vendor_file_cli": {"handlers": ["stream"]}}
-        return logger_dict
-
-    monkeypatch.setattr("logging.config.dictConfig", mock_logging)
+    monkeypatch.setattr("logging.config.dictConfig", lambda *args, **kwargs: None)
     return runner
 
 
@@ -251,7 +237,7 @@ def mock_sheet_config(monkeypatch, mock_open_file):
 
 
 @pytest.fixture
-def mock_sheet_config_creds_invalid(monkeypatch, mock_sheet_config):
+def mock_sheet_config_expired_creds(monkeypatch, mock_sheet_config):
     monkeypatch.setattr(MockCreds, "valid", False)
     monkeypatch.setattr(MockCreds, "expired", True)
 
@@ -265,6 +251,16 @@ def mock_sheet_config_no_creds(monkeypatch, mock_sheet_config):
     monkeypatch.setattr(
         "google.oauth2.credentials.Credentials.from_authorized_user_info",
         lambda *args, **kwargs: None,
+    )
+
+
+@pytest.fixture
+def mock_sheet_config_invalid_creds(monkeypatch, mock_sheet_config):
+    def mock_error(*args, **kwargs):
+        raise ValueError
+
+    monkeypatch.setattr(
+        "google.oauth2.credentials.Credentials.from_authorized_user_info", mock_error
     )
 
 
@@ -289,7 +285,16 @@ class MockResource:
 @pytest.fixture
 def mock_sheet_timeout_error(monkeypatch):
     def mock_error(*args, **kwargs):
-        raise TimeoutError("Connection timed out")
+        raise TimeoutError
+
+    monkeypatch.setattr("googleapiclient.discovery.build", mock_error)
+    monkeypatch.setattr("googleapiclient.discovery.build_from_document", mock_error)
+
+
+@pytest.fixture
+def mock_sheet_auth_error(monkeypatch):
+    def mock_error(*args, **kwargs):
+        raise ValueError
 
     monkeypatch.setattr("googleapiclient.discovery.build", mock_error)
     monkeypatch.setattr("googleapiclient.discovery.build_from_document", mock_error)
