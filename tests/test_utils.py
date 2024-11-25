@@ -103,6 +103,30 @@ def test_get_control_number_other_tag(stub_record, field):
     assert control_no == "foo"
 
 
+def test_get_control_number_skip_invalid_isbn(stub_record):
+    stub_record.remove_fields("001")
+    stub_record.add_ordered_field(
+        Field(
+            tag="020",
+            indicators=[" ", " "],
+            subfields=[
+                Subfield(code="z", value="foo"),
+            ],
+        )
+    )
+    stub_record.add_ordered_field(
+        Field(
+            tag="035",
+            indicators=[" ", " "],
+            subfields=[
+                Subfield(code="a", value="bar"),
+            ],
+        )
+    )
+    control_no = get_control_number(stub_record)
+    assert control_no == "bar"
+
+
 def test_get_control_number_call_no(stub_record):
     stub_record.remove_fields("001")
     control_no = get_control_number(stub_record)

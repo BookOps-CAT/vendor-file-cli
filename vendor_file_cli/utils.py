@@ -158,12 +158,11 @@ def get_control_number(record: Record) -> str:
         ("852", "h"),
     ]
     for f, s in field_subfield_pairs:
-        while record.get(f, None) is not None:
-            field = record.get(f, None)
-            if field is not None:
-                subfield = field.get(s)
-                if subfield is not None:
-                    return subfield
+        field = record.get(f, None)
+        if field is not None:
+            subfield = field.get(s)
+            if subfield is not None:
+                return subfield
     return "None"
 
 
