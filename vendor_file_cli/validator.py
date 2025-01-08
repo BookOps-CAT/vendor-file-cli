@@ -52,8 +52,7 @@ def get_single_file(
         logger.debug(
             f"({nsdrop_client.name}) Validating {vendor} file: {fetched_file.file_name}"
         )
-        output = validate_file(file_obj=fetched_file, vendor=vendor)
-        write_data_to_sheet(output, test=test)
+        validate_file(file_obj=fetched_file, vendor=vendor, write=test)
     return fetched_file
 
 
@@ -138,7 +137,7 @@ def get_vendor_file_list(
     return files_to_get
 
 
-def validate_file(file_obj: File, vendor: str) -> dict:
+def validate_file(file_obj: File, vendor: str, write: bool) -> None:
     """
     Validate a file of MARC records and output to google sheet.
 
@@ -179,7 +178,7 @@ def validate_file(file_obj: File, vendor: str) -> dict:
         for k, v in validation_data.items():
             out_dict[k].append(str(v))
         record_n += 1
-    return out_dict
+    write_data_to_sheet(out_dict, write=write)
 
 
 def validate_single_record(record: Record) -> dict[str, Any]:
@@ -209,4 +208,19 @@ def validate_single_record(record: Record) -> dict[str, Any]:
                 "extra_field_count": len(marc_errors.extra_fields),
             }
         )
+    for field in [
+        i
+        for i in [
+            "error_count",
+            "missing_field_count",
+            "extra_field_count",
+            "invalid_field_count",
+            "missing_fields",
+            "extra_fields",
+            "invalid_fields",
+            "order_item_mismatches",
+        ]
+        if i not in out
+    ]:
+        out[field] = ""
     return out

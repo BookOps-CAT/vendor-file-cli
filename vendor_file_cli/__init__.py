@@ -80,7 +80,13 @@ def get_available_vendors() -> None:
     "file",
     help="The file you would like to validate.",
 )
-def validate_vendor_files(vendor: str, file: str) -> None:
+@click.option(
+    "--write",
+    is_flag=True,
+    default=False,
+    help="Whether or not to write data to google sheet.",
+)
+def validate_vendor_files(vendor: str, file: str, write: bool) -> None:
     """
     Validate files for a specific vendor.
 
@@ -99,7 +105,7 @@ def validate_vendor_files(vendor: str, file: str) -> None:
             "Only EASTVIEW, LEILA, and AMALIVRE_SASB supported."
         )
         return
-    validate_files(vendor=vendor, files=[file])
+    validate_files(vendor=vendor, files=[file], write=write)
 
 
 @vendor_file_cli.command(

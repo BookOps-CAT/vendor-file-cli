@@ -222,7 +222,7 @@ def read_marc_file_stream(file_obj: File) -> Generator[Record, None, None]:
         yield record
 
 
-def write_data_to_sheet(values: dict, test: bool) -> Union[dict, None]:
+def write_data_to_sheet(values: dict, write: bool) -> Union[dict, None]:
     """
     Write output of validation to google sheet.
 
@@ -261,10 +261,10 @@ def write_data_to_sheet(values: dict, test: bool) -> Union[dict, None]:
         "values": df.values.tolist(),
     }
 
-    if test is True:
-        spreadsheet_id = "1hGzVYaqxXXBSJa3GY52UFKteZgLoWBo6X0sGsTVTpFU"
-    else:
+    if write is True:
         spreadsheet_id = "1ZYuhMIE1WiduV98Pdzzw7RwZ08O-sJo7HJihWVgSOhQ"
+    else:
+        spreadsheet_id = "1hGzVYaqxXXBSJa3GY52UFKteZgLoWBo6X0sGsTVTpFU"
 
     try:
         creds = configure_sheet()
