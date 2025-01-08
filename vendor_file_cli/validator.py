@@ -2,7 +2,7 @@ from collections import defaultdict
 import datetime
 import logging
 import os
-from typing import Any, List, Union
+from typing import Any, Dict, List, Union
 from pydantic import ValidationError
 from pymarc import Record
 from file_retriever.file import File, FileInfo
@@ -52,7 +52,7 @@ def get_single_file(
         logger.debug(
             f"({nsdrop_client.name}) Validating {vendor} file: {fetched_file.file_name}"
         )
-        validate_file(file_obj=fetched_file, vendor=vendor, write=test)
+        validate_file(file_obj=fetched_file, vendor=vendor, test=test)
     return fetched_file
 
 
@@ -137,7 +137,7 @@ def get_vendor_file_list(
     return files_to_get
 
 
-def validate_file(file_obj: File, vendor: str, write: bool) -> None:
+def validate_file(file_obj: File, vendor: str, test: bool) -> Dict[str, List[str]]:
     """
     Validate a file of MARC records and output to google sheet.
 
@@ -178,7 +178,8 @@ def validate_file(file_obj: File, vendor: str, write: bool) -> None:
         for k, v in validation_data.items():
             out_dict[k].append(str(v))
         record_n += 1
-    write_data_to_sheet(out_dict, write=write)
+    write_data_to_sheet(out_dict, test=test)
+    return out_dict
 
 
 def validate_single_record(record: Record) -> dict[str, Any]:

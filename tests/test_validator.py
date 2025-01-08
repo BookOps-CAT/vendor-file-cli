@@ -100,8 +100,8 @@ def test_get_vendor_file_list(stub_client, vendor, caplog):
         ("midwest_nypl", "MIDWEST_NYPL"),
     ],
 )
-def test_validate_file(stub_file, vendor, vendor_code):
-    out_dict = validate_file(stub_file, vendor)
+def test_validate_file(stub_file, vendor, vendor_code, mock_sheet_config):
+    out_dict = validate_file(stub_file, vendor, test=True)
     assert sorted([i for i in out_dict.keys()]) == sorted(
         [
             "valid",
@@ -110,13 +110,31 @@ def test_validate_file(stub_file, vendor, vendor_code):
             "file_name",
             "validation_date",
             "vendor_code",
+            "error_count",
+            "missing_field_count",
+            "missing_fields",
+            "extra_field_count",
+            "extra_fields",
+            "invalid_field_count",
+            "invalid_fields",
+            "order_item_mismatches",
         ]
     )
     assert out_dict["vendor_code"] == [vendor_code]
 
 
 def test_validate_single_record(mock_valid_record):
-    assert validate_single_record(mock_valid_record) == {"valid": True}
+    assert validate_single_record(mock_valid_record) == {
+        "valid": True,
+        "error_count": "",
+        "missing_field_count": "",
+        "missing_fields": "",
+        "extra_field_count": "",
+        "extra_fields": "",
+        "invalid_field_count": "",
+        "invalid_fields": "",
+        "order_item_mismatches": "",
+    }
 
 
 def test_validate_single_record_invalid(mock_invalid_record):

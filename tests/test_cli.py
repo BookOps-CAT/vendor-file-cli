@@ -107,3 +107,20 @@ def test_vendor_file_cli_validate_vendor_files_invalid_vendor(cli_runner, caplog
         "Vendor not supported for validation."
         "Only EASTVIEW, LEILA, and AMALIVRE_SASB supported." in result.stdout
     )
+
+
+def test_vendor_file_cli_validate_vendor_files_test(cli_runner, caplog):
+    logger = logging.getLogger("vendor_file_cli")
+    loggly = logging.NullHandler()
+    loggly.name = "loggly"
+    logger.addHandler(loggly)
+    result = cli_runner.invoke(
+        cli=vendor_file_cli,
+        args=["validate-file", "-v", "eastview", "-f", "foo.mrc", "--test"],
+    )
+    assert result.exit_code == 0
+    assert "(NSDROP) Connecting to " in caplog.text
+    assert "(NSDROP) Validating eastview file: foo.mrc" in caplog.text
+    assert result.exit_code == 0
+    assert "Running in test mode" in caplog.text
+    assert logger.handlers == []
