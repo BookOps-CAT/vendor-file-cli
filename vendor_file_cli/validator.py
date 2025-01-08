@@ -2,7 +2,7 @@ from collections import defaultdict
 import datetime
 import logging
 import os
-from typing import Any, Dict, List, Union
+from typing import Any, List, Union
 from pydantic import ValidationError
 from pymarc import Record
 from file_retriever.file import File, FileInfo
@@ -137,7 +137,7 @@ def get_vendor_file_list(
     return files_to_get
 
 
-def validate_file(file_obj: File, vendor: str, test: bool) -> Dict[str, List[str]]:
+def validate_file(file_obj: File, vendor: str, test: bool) -> dict:
     """
     Validate a file of MARC records and output to google sheet.
 
