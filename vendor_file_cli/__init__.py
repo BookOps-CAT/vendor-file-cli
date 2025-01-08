@@ -80,7 +80,8 @@ def get_available_vendors() -> None:
     "file",
     help="The file you would like to validate.",
 )
-def validate_vendor_files(vendor: str, file: str) -> None:
+@click.option("--test", is_flag=True, help="Run in test mode.")
+def validate_vendor_files(vendor: str, file: str, test: bool) -> None:
     """
     Validate files for a specific vendor.
 
@@ -99,7 +100,13 @@ def validate_vendor_files(vendor: str, file: str) -> None:
             "Only EASTVIEW, LEILA, and AMALIVRE_SASB supported."
         )
         return
-    validate_files(vendor=vendor, files=[file])
+    if test:
+        handlers = logger.handlers
+        for handler in handlers:
+            if handler.name == "loggly":
+                logger.removeHandler(handler)
+        logger.info("Running in test mode.")
+    validate_files(vendor=vendor, files=[file], test=test)
 
 
 @vendor_file_cli.command(

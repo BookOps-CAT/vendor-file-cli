@@ -36,12 +36,12 @@ def test_get_vendor_files_no_files(stub_client, caplog):
 
 
 def test_validate_files(stub_client, caplog):
-    validate_files(vendor="eastview", files=None)
+    validate_files(vendor="eastview", files=None, test=True)
     assert "(NSDROP) Connecting to " in caplog.text
     assert "(NSDROP) Validating eastview file: bar.mrc" in caplog.text
 
 
 def test_validate_files_with_list(stub_client, caplog):
-    validate_files(vendor="eastview", files=["foo.mrc"])
+    validate_files(vendor="eastview", files=["foo.mrc"], test=True)
     assert "(NSDROP) Connecting to " in caplog.text
     assert "(NSDROP) Validating eastview file: foo.mrc" in caplog.text

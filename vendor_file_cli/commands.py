@@ -72,7 +72,7 @@ def get_vendor_files(
             continue
 
 
-def validate_files(vendor: str, files: list | None) -> None:
+def validate_files(vendor: str, files: list | None, test: bool) -> None:
     """
     Validate files on NSDROP for a specific vendor.
 
@@ -100,5 +100,5 @@ def validate_files(vendor: str, files: list | None) -> None:
         client = connect("nsdrop")
         file_obj = client.get_file(file=file, remote_dir=file_dir)
         logger.debug(f"({client.name}) Validating {vendor} file: {file_obj.file_name}")
-        validate_file(file_obj=file_obj, vendor=vendor)
+        validate_file(file_obj=file_obj, vendor=vendor, test=test)
         client.close()
