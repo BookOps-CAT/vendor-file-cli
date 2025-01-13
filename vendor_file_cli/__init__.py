@@ -54,7 +54,7 @@ def get_all_vendor_files(test) -> None:
         logger.info("Running in test mode.")
 
     vendor_list = get_vendor_list()
-    get_vendor_files(vendors=vendor_list, days=365, test=test)
+    get_vendor_files(vendors=vendor_list, days=30, test=test)
 
 
 @vendor_file_cli.command("available-vendors", short_help="List all configured vendors.")
