@@ -6,8 +6,7 @@ from pydantic_core import ValidationError, InitErrorDetails
 from pymarc import Record, Field, Subfield, Indicators
 import pytest
 from click.testing import CliRunner
-from file_retriever.file import File, FileInfo
-from file_retriever.connect import Client
+from file_retriever import Client, File, FileInfo
 
 
 @pytest.fixture(autouse=True)

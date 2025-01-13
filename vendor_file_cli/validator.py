@@ -5,8 +5,7 @@ import os
 from typing import Any, List, Union
 from pydantic import ValidationError
 from pymarc import Record
-from file_retriever.file import File, FileInfo
-from file_retriever.connect import Client
+from file_retriever import Client, File, FileInfo
 from record_validator.marc_models import RecordModel
 from record_validator.marc_errors import MarcValidationError
 from vendor_file_cli.utils import (
