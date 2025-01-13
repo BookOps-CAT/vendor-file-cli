@@ -10,8 +10,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
 import pandas as pd
 from pymarc import MARCReader, Record
-from file_retriever.connect import Client
-from file_retriever.file import File
+from file_retriever import Client, File
 
 logger = logging.getLogger(__name__)
 
