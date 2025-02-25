@@ -2,7 +2,7 @@ from collections import defaultdict
 import datetime
 import logging
 import os
-from typing import Any, List, Union
+from typing import Any
 from pydantic import ValidationError
 from pymarc import Record
 from file_retriever import Client, File, FileInfo
@@ -38,9 +38,9 @@ def get_single_file(
         None
 
     """
-    if (
-        file.file_name.startswith("ADD") or file.file_name.startswith("NEW")
-    ) and vendor.lower() == "bakertaylor_bpl":
+    if vendor.lower() == "bakertaylor_bpl" and file.file_name.startswith(
+        ("ADD", "NEW")
+    ):
         remote_dir = ""
     else:
         remote_dir = os.environ[f"{vendor.upper()}_SRC"]
@@ -87,53 +87,21 @@ def get_vendor_file_list(
     Returns:
         list of `FileInfo` objects representing files to retrieve from the vendor server
     """
-    nsdrop_files: Union[List[FileInfo], List[str]]
-    vendor_files: Union[List[FileInfo], List[str]]
-
     today = datetime.datetime.now(tz=datetime.timezone.utc)
-    src_dir = os.environ[f"{vendor.upper()}_SRC"]
-    dst_dir = os.environ[f"{vendor.upper()}_DST"]
-    if vendor.lower() == "midwest_nypl":
-        nsdrop_files = nsdrop_client.list_files(remote_dir=dst_dir)
-        vendor_files = vendor_client.list_files(remote_dir=src_dir)
+    vendor = vendor.upper()
+    nsdrop_files = nsdrop_client.list_files(os.environ[f"{vendor}_DST"])
+    vendor_files = vendor_client.list_file_info(os.environ[f"{vendor}_SRC"])
 
-        files_to_check = [
-            i
-            for i in vendor_files
-            if i.endswith(".mrc")
-            and "ALL" in i
-            and int(i.split("_ALL")[0][-4:]) >= 2024
-            and int(i.split("_ALL")[0][-8:-6]) >= 7
-            and i not in nsdrop_files
-        ]
-        file_data = [
-            vendor_client.get_file_info(file_name=i, remote_dir=src_dir)
-            for i in files_to_check
-        ]
-    else:
-        nsdrop_files = nsdrop_client.list_file_info(dst_dir)
-        vendor_files = vendor_client.list_file_info(src_dir)
-        file_data = [
-            i
-            for i in vendor_files
-            if i.file_name not in [j.file_name for j in nsdrop_files]
-        ]
-        if vendor.lower() == "bakertaylor_bpl":
-            other_files = vendor_client.list_file_info("")
-            file_data.extend(
-                [
-                    i
-                    for i in other_files
-                    if i.file_name not in [j.file_name for j in nsdrop_files]
-                ]
-            )
-    files_to_get = [
+    if vendor == "BAKERTAYLOR_BPL":
+        vendor_files.extend(vendor_client.list_file_info(""))
+
+    return [
         i
-        for i in file_data
-        if datetime.datetime.fromtimestamp(i.file_mtime, tz=datetime.timezone.utc)
+        for i in vendor_files
+        if i.file_name not in nsdrop_files
+        and datetime.datetime.fromtimestamp(i.file_mtime, tz=datetime.timezone.utc)
         >= today - timedelta
     ]
-    return files_to_get
 
 
 def validate_file(file_obj: File, vendor: str, test: bool) -> dict:
