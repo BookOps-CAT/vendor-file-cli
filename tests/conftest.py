@@ -99,8 +99,6 @@ class MockSession:
     def list_file_names(self, dir, *args, **kwargs) -> list[str]:
         if "NSDROP" in dir:
             return ["bar.mrc"]
-        elif "midwest" or "MIDWEST" in dir:
-            return ["NYP_10012024_ALL_01.mrc"]
         else:
             return ["foo.mrc"]
 
