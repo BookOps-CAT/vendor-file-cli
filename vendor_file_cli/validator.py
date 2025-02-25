@@ -88,10 +88,11 @@ def get_vendor_file_list(
         list of `FileInfo` objects representing files to retrieve from the vendor server
     """
     today = datetime.datetime.now(tz=datetime.timezone.utc)
+    vendor = vendor.upper()
     nsdrop_files = nsdrop_client.list_files(os.environ[f"{vendor}_DST"])
     vendor_files = vendor_client.list_file_info(os.environ[f"{vendor}_SRC"])
 
-    if vendor.lower() == "bakertaylor_bpl":
+    if vendor == "BAKERTAYLOR_BPL":
         vendor_files.extend(vendor_client.list_file_info(""))
 
     return [
