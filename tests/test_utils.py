@@ -1,7 +1,9 @@
 import os
-from pymarc import Field, Subfield
+
 import pytest
 from file_retriever.connect import Client
+from pymarc import Field, Subfield
+
 from vendor_file_cli.utils import (
     configure_sheet,
     connect,
@@ -71,9 +73,7 @@ def test_connect(stub_client):
 def test_create_logger_dict(cli_runner):
     logger_dict = create_logger_dict()
     assert sorted(list(logger_dict["formatters"].keys())) == sorted(["basic", "json"])
-    assert sorted(list(logger_dict["handlers"].keys())) == sorted(
-        ["stream", "file", "loggly"]
-    )
+    assert sorted(list(logger_dict["handlers"].keys())) == sorted(["stream", "file"])
     assert sorted(list(logger_dict["loggers"].keys())) == sorted(
         ["file_retriever", "vendor_file_cli"]
     )

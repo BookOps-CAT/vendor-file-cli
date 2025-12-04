@@ -2,11 +2,12 @@ import datetime
 import ftplib
 import io
 import os
-from pydantic_core import ValidationError, InitErrorDetails
-from pymarc import Record, Field, Subfield, Indicators
+
 import pytest
 from click.testing import CliRunner
 from file_retriever import Client, File, FileInfo
+from pydantic_core import InitErrorDetails, ValidationError
+from pymarc import Field, Indicators, Record, Subfield
 
 
 @pytest.fixture(autouse=True)
@@ -150,7 +151,7 @@ def stub_client_auth_error(monkeypatch, stub_client):
 @pytest.fixture
 def mock_vendor_creds() -> str:
     vendors = ["NSDROP", "EASTVIEW", "LEILA", "MIDWEST_NYPL", "BAKERTAYLOR_BPL"]
-    env = {"LOGGLY_TOKEN": "foo"}
+    env = {}
     for vendor in vendors:
         env[f"{vendor}_HOST"] = f"ftp.{vendor.lower()}.com"
         env[f"{vendor}_USER"] = f"{vendor.lower()}"
@@ -177,7 +178,7 @@ def mock_open_file(mock_vendor_creds, mocker) -> None:
 
 @pytest.fixture
 def unset_env_var(monkeypatch, mock_vendor_creds) -> None:
-    keys = ["NSDROP", "EASTVIEW", "LEILA", "MIDWEST_NYPL", "BAKERTAYLOR_BPL", "LOGGLY"]
+    keys = ["NSDROP", "EASTVIEW", "LEILA", "MIDWEST_NYPL", "BAKERTAYLOR_BPL"]
     env_vars = os.environ.keys()
     for var in env_vars:
         if any(key in var for key in keys):

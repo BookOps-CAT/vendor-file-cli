@@ -5,7 +5,7 @@ description = "CLI tool to retrieve files from vendor servers"
 authors = [{name = "Charlotte Kostelic", email = "charlottekostelic@bookops.org"}]
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4.0"
 dependencies = [
     "click (>=8.1.7)",
     "pyyaml (>=6.0.2)",
@@ -17,7 +17,6 @@ dependencies = [
     "google-auth-oauthlib (>=1.2.1)",
     "pandas (>=2.2.3)",
     "pandas-stubs (>=2.2.2.240909)",
-    "loggly-python-handler (>=1.0.1)",
 ]
 
 [tool.poetry.group.dev.dependencies]

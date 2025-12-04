@@ -1,8 +1,10 @@
 import logging
 import os
-from click.testing import CliRunner
+
 import pytest
-from vendor_file_cli import vendor_file_cli, main
+from click.testing import CliRunner
+
+from vendor_file_cli import main, vendor_file_cli
 
 
 def test_main(mocker):
@@ -45,9 +47,9 @@ def test_vendor_file_cli_get_all_vendor_files_no_creds(mocker, cli_runner, caplo
 
 def test_vendor_file_cli_get_all_vendor_files_test(cli_runner, caplog):
     logger = logging.getLogger("vendor_file_cli")
-    loggly = logging.NullHandler()
-    loggly.name = "loggly"
-    logger.addHandler(loggly)
+    log_handler = logging.NullHandler()
+    log_handler.name = "log_handler"
+    logger.addHandler(log_handler)
     result = cli_runner.invoke(cli=vendor_file_cli, args=["all-vendor-files", "--test"])
     assert result.exit_code == 0
     assert "Running in test mode" in caplog.text
@@ -111,9 +113,9 @@ def test_vendor_file_cli_validate_vendor_files_invalid_vendor(cli_runner, caplog
 
 def test_vendor_file_cli_validate_vendor_files_test(cli_runner, caplog):
     logger = logging.getLogger("vendor_file_cli")
-    loggly = logging.NullHandler()
-    loggly.name = "loggly"
-    logger.addHandler(loggly)
+    log_handler = logging.NullHandler()
+    log_handler.name = "log_handler"
+    logger.addHandler(log_handler)
     result = cli_runner.invoke(
         cli=vendor_file_cli,
         args=["validate-file", "-v", "eastview", "-f", "foo.mrc", "--test"],

@@ -1,16 +1,17 @@
 import logging
 import os
-import yaml
 from typing import Generator, Optional, Union
-from googleapiclient.discovery import build  # type: ignore
-from googleapiclient.errors import HttpError  # type: ignore
+
+import pandas as pd
+import yaml
+from file_retriever import Client, File
 from google.auth.exceptions import RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
-import pandas as pd
+from googleapiclient.discovery import build  # type: ignore
+from googleapiclient.errors import HttpError  # type: ignore
 from pymarc import MARCReader, Record
-from file_retriever import Client, File
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +93,6 @@ def connect(name: str) -> Client:
 
 def create_logger_dict() -> dict:
     """Create a dictionary to configure logger."""
-    loggly_token = os.environ.get("LOGGLY_TOKEN")
     return {
         "version": 1,
         "disable_existing_loggers": False,
@@ -119,21 +119,15 @@ def create_logger_dict() -> dict:
                 "maxBytes": 10 * 1024 * 1024,
                 "backupCount": 5,
             },
-            "loggly": {
-                "class": "loggly.handlers.HTTPSHandler",
-                "formatter": "json",
-                "level": "INFO",
-                "url": f"https://logs-01.loggly.com/inputs/{loggly_token}/tag/python",
-            },
         },
         "loggers": {
             "file_retriever": {
-                "handlers": ["stream", "file", "loggly"],
+                "handlers": ["stream", "file"],
                 "level": "DEBUG",
                 "propagate": False,
             },
             "vendor_file_cli": {
-                "handlers": ["stream", "file", "loggly"],
+                "handlers": ["stream", "file"],
                 "level": "DEBUG",
                 "propagate": False,
             },

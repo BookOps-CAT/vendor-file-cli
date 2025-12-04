@@ -1,7 +1,9 @@
 import logging
 import logging.config
 import os
+
 import click
+
 from vendor_file_cli.commands import get_vendor_files, validate_files
 from vendor_file_cli.utils import create_logger_dict, get_vendor_list, load_creds
 
@@ -35,9 +37,7 @@ def get_all_vendor_files(test) -> None:
     and Amalivre (SASB) before copying them to NSDROP and writes output of validation
     to google sheet. Files are copied to NSDROP/vendor_records/{vendor_name}.
 
-    If test flag is passed, the loggly handler is removed so log messages are only
-    written to the console and log file. The output of any validation is written
-    to a test sheet.
+    If test flag is passed, the output of any validation is written to a test sheet.
 
     Args:
         test: flag to run in test mode
@@ -47,10 +47,6 @@ def get_all_vendor_files(test) -> None:
 
     """
     if test:
-        handlers = logger.handlers
-        for handler in handlers:
-            if handler.name == "loggly":
-                logger.removeHandler(handler)
         logger.info("Running in test mode.")
 
     vendor_list = get_vendor_list()
@@ -101,10 +97,6 @@ def validate_vendor_files(vendor: str, file: str, test: bool) -> None:
         )
         return
     if test:
-        handlers = logger.handlers
-        for handler in handlers:
-            if handler.name == "loggly":
-                logger.removeHandler(handler)
         logger.info("Running in test mode.")
     validate_files(vendor=vendor, files=[file], test=test)
 
