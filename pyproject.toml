@@ -1,25 +1,24 @@
-[tool.poetry]
+[project]
 name = "vendor-file-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "CLI tool to retrieve files from vendor servers"
-authors = ["Charlotte Kostelic <charlottekostelic@gmail.com>"]
+authors = [{name = "Charlotte Kostelic", email = "charlottekostelic@bookops.org"}]
 license = "MIT"
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.10"
-click = "^8.1.7"
-pyyaml = "^6.0.2"
-types-pyyaml = "^6.0.12.20240808"
-file-retriever = {git = "https://github.com/BookOps-CAT/file-retriever.git"}
-record-validator = {git = "https://github.com/BookOps-CAT/record-validator.git"}
-pymarc = "^5.2.2"
-google-api-python-client = "^2.146.0"
-google-auth-oauthlib = "^1.2.1"
-pandas = "^2.2.3"
-pandas-stubs = "^2.2.2.240909"
-loggly-python-handler = "^1.0.1"
-
+requires-python = ">=3.11"
+dependencies = [
+    "click (>=8.1.7)",
+    "pyyaml (>=6.0.2)",
+    "types-pyyaml (>=6.0.12.20240808)",
+    "file-retriever @ git+https://github.com/BookOps-CAT/file-retriever.git#release/v0.3.0",
+    "record-validator @ git+https://github.com/BookOps-CAT/record-validator.git",
+    "pymarc (>=5.2.2)",
+    "google-api-python-client (>=2.146.0)",
+    "google-auth-oauthlib (>=1.2.1)",
+    "pandas (>=2.2.3)",
+    "pandas-stubs (>=2.2.2.240909)",
+    "loggly-python-handler (>=1.0.1)",
+]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.2"
@@ -27,19 +26,28 @@ pytest-cov = "^5.0.0"
 pytest-mock = "^3.14.0"
 
 
-[tool.poetry.scripts]
+[project.scripts]
 fetch = "vendor_file_cli:main"
 
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = '--cov=vendor_file_cli/'
 
 
 [tool.coverage.run]
 relative_files = true
 source = ["."]
+omit = ["tests/*"]
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
