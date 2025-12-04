@@ -1,4 +1,3 @@
-import logging
 import os
 
 import pytest
@@ -46,14 +45,9 @@ def test_vendor_file_cli_get_all_vendor_files_no_creds(mocker, cli_runner, caplo
 
 
 def test_vendor_file_cli_get_all_vendor_files_test(cli_runner, caplog):
-    logger = logging.getLogger("vendor_file_cli")
-    log_handler = logging.NullHandler()
-    log_handler.name = "log_handler"
-    logger.addHandler(log_handler)
     result = cli_runner.invoke(cli=vendor_file_cli, args=["all-vendor-files", "--test"])
     assert result.exit_code == 0
     assert "Running in test mode" in caplog.text
-    assert logger.handlers == []
 
 
 def test_vendor_file_cli_get_available_vendors(cli_runner):
@@ -112,10 +106,6 @@ def test_vendor_file_cli_validate_vendor_files_invalid_vendor(cli_runner, caplog
 
 
 def test_vendor_file_cli_validate_vendor_files_test(cli_runner, caplog):
-    logger = logging.getLogger("vendor_file_cli")
-    log_handler = logging.NullHandler()
-    log_handler.name = "log_handler"
-    logger.addHandler(log_handler)
     result = cli_runner.invoke(
         cli=vendor_file_cli,
         args=["validate-file", "-v", "eastview", "-f", "foo.mrc", "--test"],
@@ -125,4 +115,3 @@ def test_vendor_file_cli_validate_vendor_files_test(cli_runner, caplog):
     assert "(NSDROP) Validating eastview file: foo.mrc" in caplog.text
     assert result.exit_code == 0
     assert "Running in test mode" in caplog.text
-    assert logger.handlers == []

@@ -1,16 +1,18 @@
-from collections import defaultdict
 import datetime
 import logging
 import os
+from collections import defaultdict
 from typing import Any
+
+from file_retriever import Client, File, FileInfo
 from pydantic import ValidationError
 from pymarc import Record
-from file_retriever import Client, File, FileInfo
-from record_validator.marc_models import RecordModel
 from record_validator.marc_errors import MarcValidationError
+from record_validator.marc_models import RecordModel
+
 from vendor_file_cli.utils import (
-    read_marc_file_stream,
     get_control_number,
+    read_marc_file_stream,
     write_data_to_sheet,
 )
 
@@ -46,7 +48,7 @@ def get_single_file(
         remote_dir = os.environ[f"{vendor.upper()}_SRC"]
     nsdrop_dir = os.environ[f"{vendor.upper()}_DST"]
     fetched_file = vendor_client.get_file(file=file, remote_dir=remote_dir)
-    nsdrop_client.put_file(file=fetched_file, dir=nsdrop_dir, remote=True, check=True)
+    nsdrop_client.put_file(file=fetched_file, dir=nsdrop_dir, remote=True)
     if vendor.upper() in ["EASTVIEW", "LEILA", "AMALIVRE_SASB"]:
         logger.debug(
             f"({nsdrop_client.name}) Validating {vendor} file: {fetched_file.file_name}"
