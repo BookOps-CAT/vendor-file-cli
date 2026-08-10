@@ -2,7 +2,7 @@ import os
 
 import pytest
 from file_retriever.connect import Client
-from pymarc import Field, Subfield
+from pymarc import Field, Indicators, Subfield
 
 from vendor_file_cli.utils import (
     configure_sheet,
@@ -84,19 +84,14 @@ def test_get_control_number(stub_record):
     assert control_no == "on1381158740"
 
 
-@pytest.mark.parametrize(
-    "field",
-    ["020", "035", "022", "024", "010"],
-)
+@pytest.mark.parametrize("field", ["020", "035", "022", "024", "010"])
 def test_get_control_number_other_tag(stub_record, field):
     stub_record.remove_fields("001")
     stub_record.add_ordered_field(
         Field(
             tag=field,
-            indicators=[" ", " "],
-            subfields=[
-                Subfield(code="a", value="foo"),
-            ],
+            indicators=Indicators(" ", " "),
+            subfields=[Subfield(code="a", value="foo")],
         )
     )
     control_no = get_control_number(stub_record)
@@ -108,19 +103,15 @@ def test_get_control_number_skip_invalid_isbn(stub_record):
     stub_record.add_ordered_field(
         Field(
             tag="020",
-            indicators=[" ", " "],
-            subfields=[
-                Subfield(code="z", value="foo"),
-            ],
+            indicators=Indicators(" ", " "),
+            subfields=[Subfield(code="z", value="foo")],
         )
     )
     stub_record.add_ordered_field(
         Field(
             tag="035",
-            indicators=[" ", " "],
-            subfields=[
-                Subfield(code="a", value="bar"),
-            ],
+            indicators=Indicators(" ", " "),
+            subfields=[Subfield(code="a", value="bar")],
         )
     )
     control_no = get_control_number(stub_record)
@@ -133,8 +124,20 @@ def test_get_control_number_call_no(stub_record):
     assert control_no == "ReCAP 23-100000"
 
 
-def test_get_control_number_none(stub_record):
+@pytest.mark.parametrize(
+    "field",
+    [
+        Field(tag="001", data=None),
+        Field(
+            tag="852",
+            indicators=Indicators("8", " "),
+            subfields=[Subfield(code="a", value="foo")],
+        ),
+    ],
+)
+def test_get_control_number_none(stub_record, field):
     stub_record.remove_fields("001", "852")
+    stub_record.add_field(field)
     control_no = get_control_number(stub_record)
     assert control_no == "None"
 
